@@ -67,8 +67,9 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
   const workspaceArg = options.xcworkspace ? `-workspace \"${options.xcworkspace}\"` : "";
   const projectArg = options.xcodeproj ? `-project \"${options.xcodeproj}\"` : "";
   const schemeArg = options.scheme ? `-scheme \"${options.scheme}\"` : "";
+  const destinationArg = `-destination \"${options.destination || 'generic/platform=iOS Simulator'}\"`;
   const resultBundleArg = "-resultBundlePath ./test.xcresult";
-  const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${resultBundleArg}`.replace(/\s+/g, ' ').trim();
+  const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} ${resultBundleArg}`.replace(/\s+/g, ' ').trim();
 
   console.log(`[MCP] Running tests with: ${cmd}`);
   try {

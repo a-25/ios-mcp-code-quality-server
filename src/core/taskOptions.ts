@@ -2,6 +2,7 @@ export interface TestFixOptions {
   xcodeproj?: string;
   xcworkspace?: string;
   scheme: string;
+  destination?: string;
 }
 
 export interface LintFixOptions {
