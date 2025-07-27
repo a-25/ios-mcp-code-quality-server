@@ -9,6 +9,7 @@
     "lint": "eslint . --ext .ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
     "@types/express": "^5.0.3",
     "dotenv": "^16.3.1",
     "execa": "^8.0.1",

@@ -1,21 +1,142 @@
-import { fileURLToPath } from "url";
-import path from "path";
-import dotenv from "dotenv";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+import express from "express";
+import { randomUUID } from "node:crypto";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
+import { orchestrateTask, TaskType } from "./core/taskOrchestrator.js";
+import { validateTestFixOptions, validateLintFixOptions, TestFixOptions, LintFixOptions } from "./core/taskOptions.js";
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error("[MCP] ERROR: OPENAI_API_KEY is missing. Please set it in your .env file.");
-  process.exit(1);
-}
+const app = express();
+app.use(express.json());
 
-import { startMcpServer } from "./mcpServer.js";
+const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
-async function main() {
-  console.log("[MCP] Server started");
-  startMcpServer(3000);
-}
+app.post('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  let transport: StreamableHTTPServerTransport;
 
-main().catch(console.error);
+  if (sessionId && transports[sessionId]) {
+    transport = transports[sessionId];
+  } else if (!sessionId && isInitializeRequest(req.body)) {
+    transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (sessionId) => {
+        transports[sessionId] = transport;
+      },
+      enableDnsRebindingProtection: true,
+      allowedHosts: ['127.0.0.1'],
+    });
+    transport.onclose = () => {
+      if (transport.sessionId) {
+        delete transports[transport.sessionId];
+      }
+    };
+    const server = new McpServer({
+      name: "ios-mcp-code-quality-server",
+      version: "0.0.1"
+    });
+
+    // Register MCP test tool
+    server.registerTool(
+      "test",
+      {
+        title: "Run iOS tests",
+        description: "Run iOS tests and report failures",
+        inputSchema: {
+          xcodeproj: z.string().optional(),
+          xcworkspace: z.string().optional(),
+          scheme: z.string().optional(),
+          destination: z.string().optional()
+        }
+      },
+      async (input) => {
+        const options = input as TestFixOptions;
+        const validation = validateTestFixOptions(options);
+        if (!validation.valid) {
+          return {
+            content: [
+              { type: "text", text: `Error: ${validation.error}` }
+            ]
+          };
+        }
+        try {
+          const result = await orchestrateTask(TaskType.TestFix, options);
+          return { content: [{ type: "text", text: JSON.stringify(result) }] };
+        } catch (err) {
+          const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as Error).message : "Task failed";
+          return {
+            content: [
+              { type: "text", text: `Error: ${errorMsg}` }
+            ]
+          };
+        }
+      }
+    );
+
+    // Register MCP lint tool
+    server.registerTool(
+      "lint",
+      {
+        title: "Run SwiftLint",
+        description: "Run SwiftLint and report issues",
+        inputSchema: {
+          xcodeproj: z.string().optional(),
+          xcworkspace: z.string().optional()
+        }
+      },
+      async (input) => {
+        const options = input as LintFixOptions;
+        const validation = validateLintFixOptions(options);
+        if (!validation.valid) {
+          return {
+            content: [
+              { type: "text", text: `Error: ${validation.error}` }
+            ]
+          };
+        }
+        try {
+          const result = await orchestrateTask(TaskType.LintFix, options);
+          return { content: [{ type: "text", text: JSON.stringify(result) }] };
+        } catch (err) {
+          const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as Error).message : "Task failed";
+          return {
+            content: [
+              { type: "text", text: `Error: ${errorMsg}` }
+            ]
+          };
+        }
+      }
+    );
+    await server.connect(transport);
+  } else {
+    res.status(400).json({
+      jsonrpc: '2.0',
+      error: {
+        code: -32000,
+        message: 'Bad Request: No valid session ID provided',
+      },
+      id: null,
+    });
+    return;
+  }
+
+  await transport.handleRequest(req, res, req.body);
+});
+
+const handleSessionRequest = async (req: express.Request, res: express.Response) => {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  if (!sessionId || !transports[sessionId]) {
+    res.status(400).send('Invalid or missing session ID');
+    return;
+  }
+  const transport = transports[sessionId];
+  await transport.handleRequest(req, res);
+};
+
+app.get('/mcp', handleSessionRequest);
+app.delete('/mcp', handleSessionRequest);
+
+app.listen(3000);
 
