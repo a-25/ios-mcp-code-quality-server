@@ -1,8 +1,8 @@
 import PQueue from "p-queue";
-import { runTestsAndParseFailures } from "./testRunner.js";
+import { runTestsAndParseFailures } from "./testRunner";
 import { getAISuggestion } from "./aiSuggester.js";
 import { runSwiftLintFix } from "./swiftLint.js";
-import { applySuggestion } from "./suggestionApplier.js";
+import { applySuggestion } from "./suggestionApplier";
 import fs from "fs-extra";
 import { exec } from "child_process";
 import util from "util";
