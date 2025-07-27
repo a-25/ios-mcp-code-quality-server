@@ -10,11 +10,11 @@ if (!process.env.OPENAI_API_KEY) {
   process.exit(1);
 }
 
-import { orchestrateTask } from "./core/taskOrchestrator.js";
+import { startMcpServer } from "./mcpServer.js";
 
 async function main() {
   console.log("[MCP] Server started");
-  await orchestrateTask();
+  startMcpServer(3000);
 }
 
 main().catch(console.error);

@@ -1,8 +1,8 @@
 import PQueue from "p-queue";
-import { runTestsAndParseFailures } from "./testRunner";
+import { runTestsAndParseFailures } from "./testRunner.js";
 import { getAISuggestion } from "./aiSuggester.js";
 import { runSwiftLintFix } from "./swiftLint.js";
-import { applySuggestion } from "./suggestionApplier";
+import { applySuggestion } from "./suggestionApplier.js";
 import fs from "fs-extra";
 import { exec } from "child_process";
 import util from "util";
@@ -17,7 +17,9 @@ async function handleTestFixLoop(maxRetries = 3) {
     const failures = await runTestsAndParseFailures();
     if (failures.length === 0) {
       console.log("[MCP] ✅ All tests passed.");
-      // Do not commit changes automatically
+
+      // Optional: commit changes
+      await autoCommitFixes("Fix: auto-applied test failure resolutions");
       return;
     }
 
@@ -37,23 +39,37 @@ async function handleTestFixLoop(maxRetries = 3) {
   console.log("[MCP] ❌ Tests are still failing after max retries.");
 }
 
+async function autoCommitFixes(message: string) {
+  try {
+    await execAsync("git add .");
+    await execAsync(`git commit -m \"${message}\"`);
+    console.log("[MCP] ✅ Auto-committed changes.");
+  } catch (err) {
+    console.warn("[MCP] Could not commit changes:", err);
+  }
+}
+
 async function handleLintFix(path: string) {
   console.log(`[MCP] Running SwiftLint fix on: ${path}`);
   const output = await runSwiftLintFix(path);
   console.log("[SwiftLint Output]:\n" + output);
-  // Do not commit changes automatically
+
+  await autoCommitFixes("Fix: auto-applied SwiftLint corrections");
 }
 
-export type TaskType = "test-fix" | "lint-fix";
+export enum TaskType {
+  TestFix = "test-fix",
+  LintFix = "lint-fix"
+}
 
-export async function orchestrateTask(type: TaskType = "test-fix") {
+export async function orchestrateTask(type: TaskType) {
   console.log(`🧠 [MCP] Starting task: ${type}`);
 
   switch (type) {
-    case "test-fix":
+    case TaskType.TestFix:
       await queue.add(() => handleTestFixLoop());
       break;
-    case "lint-fix":
+    case TaskType.LintFix:
       await queue.add(() => handleLintFix("./Sources"));
       break;
     default:
@@ -63,4 +79,3 @@ export async function orchestrateTask(type: TaskType = "test-fix") {
   await queue.onIdle();
   console.log("[MCP] ✅ Task completed:", type);
 }
-
