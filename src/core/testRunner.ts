@@ -74,13 +74,7 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
   const workspaceArg = options.xcworkspace ? `-workspace \"${options.xcworkspace}\"` : "";
   const projectArg = options.xcodeproj ? `-project \"${options.xcodeproj}\"` : "";
   const schemeArg = options.scheme ? `-scheme \"${options.scheme}\"` : "";
-  // Ensure destination is in key=value format
-  let destinationValue = options.destination || 'generic/platform=iOS Simulator';
-  if (!destinationValue.includes('=')) {
-    // fallback to default if not valid
-    destinationValue = 'generic/platform=iOS Simulator';
-  }
-  const destinationArg = `-destination \"${destinationValue}\"`;
+  const destinationArg = `-destination \"${options.destination || 'generic/platform=iOS Simulator'}\"`;
   const resultBundleArg = "-resultBundlePath ./test.xcresult";
   const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} ${resultBundleArg}`.replace(/\s+/g, ' ').trim();
 
