@@ -19,4 +19,3 @@ export async function getAISuggestion(prompt: string): Promise<string> {
 
   // return response.choices[0]?.message?.content || "";
 }
-

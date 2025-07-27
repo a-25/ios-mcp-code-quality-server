@@ -27,22 +27,14 @@ async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3) {
     console.log(`[MCP] ❌ ${failures.length} test(s) failed.`);
 
     for (const failure of failures) {
-      const context = `Test Failure:
-` +
-        `Suite: ${failure.suiteName || "UnknownSuite"}
-` +
-        `Test: ${failure.testIdentifier}
-` +
-        `File: ${failure.file}
-` +
-        `Line: ${failure.line}
-` +
-        `Message: ${failure.message}
-` +
-        (failure.stack ? `Stack Trace: ${failure.stack}
-` : "") +
-        (failure.attachments && failure.attachments.length > 0 ? `Attachments: ${failure.attachments.join(", ")}
-` : "");
+      let context = "Test Failure:";
+      if (failure.suiteName) context += `\nSuite: ${failure.suiteName}, `;
+      if (failure.testIdentifier) context += `\nTest: ${failure.testIdentifier}, `;
+      if (failure.file) context += `\nFile: ${failure.file}, `;
+      if (failure.line) context += `\nLine: ${failure.line}, `;
+      if (failure.message) context += `\nMessage: ${failure.message}, `;
+      if (failure.stack) context += `\nStack Trace: ${failure.stack}, `;
+      if (failure.attachments && failure.attachments.length > 0) context += `\nAttachments: ${failure.attachments.join(", ")},`;
       const suggestion = await getAISuggestion(
         `The following Swift test failed. Suggest a fix:\n\n${context}`
       );
