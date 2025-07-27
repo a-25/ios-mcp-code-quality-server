@@ -1,6 +1,9 @@
 {
   "name": "ios-mcp-code-quality-server",
   "version": "0.1.0",
+  "type": "module",
+  "description": "A server for analyzing iOS MCP code quality using AI suggestions and test results.",
+  "main": "dist/index.js",
   "scripts": {
     "start": "tsc && node dist/index.js",
     "lint": "eslint . --ext .ts"
