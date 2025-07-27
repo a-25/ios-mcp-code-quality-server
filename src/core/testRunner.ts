@@ -18,14 +18,14 @@ const execAsync = util.promisify(exec);
 async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailure[]> {
   const failures: TestFailure[] = [];
   try {
-    const { stdout } = await execAsync(`xcrun xcresulttool get --format json --path ${xcresultPath}`);
+    const { stdout } = await execAsync(`xcrun xcresulttool get --legacy --format json --path ${xcresultPath}`);
     const result = JSON.parse(stdout);
     // Traverse actions and tests
     const actions = result.actions._values || [];
     for (const action of actions) {
       const testRefs = action.actionResult.testsRef;
-      if (!testRefs) continue;
-      const { stdout: testJson } = await execAsync(`xcrun xcresulttool get --format json --path ${xcresultPath} --id ${testRefs.id}`);
+      if (!testRefs || typeof testRefs.id !== "string") continue;
+      const { stdout: testJson } = await execAsync(`xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} --id ${testRefs.id}`);
       const testRoot = JSON.parse(testJson);
       const summaries = testRoot.summaries._values || [];
       for (const summary of summaries) {
@@ -79,14 +79,19 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
   const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} ${resultBundleArg}`.replace(/\s+/g, ' ').trim();
 
   console.log(`[MCP] Running tests with: ${cmd}`);
+  var testCommandResult: { stdout: string, stderr: string };
   try {
-    const { stdout, stderr } = await execAsync(cmd);
-    console.log("[MCP] xcodebuild output:", stdout);
-    // Parse .xcresult for failures
-    const failures = await parseXcresultForFailures(xcresultPath);
-    return failures;
+    testCommandResult = await execAsync(cmd);
   } catch (err: any) {
     console.error("[MCP] Error running xcodebuild:", err.stderr || err.message);
+    testCommandResult = { stdout: err.stderr, stderr: err.message };
+  }
+  console.log(`[MCP] xcodebuild output: ${testCommandResult.stdout}, error: ${testCommandResult.stderr}`);
+
+  if (await fs.pathExists(xcresultPath)) {
+    const failures = await parseXcresultForFailures(xcresultPath);
+    return failures;
+  } else {
     return [];
   }
 }
