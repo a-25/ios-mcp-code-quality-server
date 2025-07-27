@@ -23,6 +23,28 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
     // Traverse actions and tests
     const actions = result.actions._values || [];
     for (const action of actions) {
+      // Parse top-level test failures
+      const testFailureSummaries = action.actionResult.issues?.testFailureSummaries?._values || [];
+      for (const issue of testFailureSummaries) {
+        let file = undefined, line = undefined;
+        if (issue.documentLocationInCreatingWorkspace?.url) {
+          const url = issue.documentLocationInCreatingWorkspace.url._value;
+          const match = url.match(/file:\/\/\/(.*)#EndingLineNumber=(\d+)/);
+          if (match) {
+            file = match[1];
+            line = parseInt(match[2], 10);
+          }
+        }
+        failures.push({
+          testIdentifier: issue.testCaseName?._value || "UnknownTest",
+          suiteName: "",
+          file,
+          line,
+          message: issue.message?._value || "",
+          stack: undefined,
+          attachments: []
+        });
+      }
       const testRefs = action.actionResult.testsRef;
       if (!testRefs || typeof testRefs.id !== "string") continue;
       const { stdout: testJson } = await execAsync(`xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} --id ${testRefs.id}`);
