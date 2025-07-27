@@ -1,6 +1,7 @@
 import { TestFixOptions } from "./taskOptions.js";
 import { exec } from "child_process";
 import util from "util";
+import fs from "fs-extra";
 
 export type TestFailure = {
   testIdentifier: string;
@@ -63,6 +64,12 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
 }
 
 export async function runTestsAndParseFailures(options: TestFixOptions): Promise<TestFailure[]> {
+  // Clean previous test artifacts
+  const xcresultPath = "./test.xcresult";
+  if (await fs.pathExists(xcresultPath)) {
+    await fs.remove(xcresultPath);
+    console.log(`[MCP] Removed previous xcresult at ${xcresultPath}`);
+  }
   // Build xcodebuild command
   const workspaceArg = options.xcworkspace ? `-workspace \"${options.xcworkspace}\"` : "";
   const projectArg = options.xcodeproj ? `-project \"${options.xcodeproj}\"` : "";
@@ -76,7 +83,7 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
     const { stdout, stderr } = await execAsync(cmd);
     console.log("[MCP] xcodebuild output:", stdout);
     // Parse .xcresult for failures
-    const failures = await parseXcresultForFailures("./test.xcresult");
+    const failures = await parseXcresultForFailures(xcresultPath);
     return failures;
   } catch (err: any) {
     console.error("[MCP] Error running xcodebuild:", err.stderr || err.message);
