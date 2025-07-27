@@ -1,19 +1,33 @@
 import express from "express";
 import { orchestrateTask, TaskType } from "./core/taskOrchestrator.js";
+import { validateTestFixOptions, validateLintFixOptions, TestFixOptions, LintFixOptions } from "./core/taskOptions.js";
 
 const app = express();
 app.use(express.json());
 
 app.post("/run-task", async (req, res) => {
-  const { type } = req.body;
-  console.log(`[MCP] Received /run-task with type: ${type}`);
-  if (!type || !(type in TaskType)) {
+  const { type, xcodeproj, xcworkspace, scheme } = req.body;
+  console.log(`[MCP] Received /run-task with type: ${type}, xcodeproj: ${xcodeproj}, xcworkspace: ${xcworkspace}, scheme: ${scheme}`);
+  const validTypes = Object.values(TaskType);
+  if (!type || !validTypes.includes(type)) {
     console.log(`[MCP] Invalid or missing task type: ${type}`);
     return res.status(400).json({ error: "Invalid or missing task type" });
   }
+  let validation;
+  let options;
+  if (type === TaskType.TestFix) {
+    options = { xcodeproj, xcworkspace, scheme } as TestFixOptions;
+    validation = validateTestFixOptions(options);
+  } else if (type === TaskType.LintFix) {
+    options = { xcodeproj, xcworkspace } as LintFixOptions;
+    validation = validateLintFixOptions(options);
+  }
+  if (validation && !validation.valid) {
+    return res.status(400).json({ error: validation.error });
+  }
   try {
     console.log(`[MCP] Starting orchestrateTask for type: ${type}`);
-    await orchestrateTask(type as TaskType);
+    await orchestrateTask(type as TaskType, options);
     console.log(`[MCP] Task completed: ${type}`);
     res.json({ status: "Task completed", type });
   } catch (err) {
