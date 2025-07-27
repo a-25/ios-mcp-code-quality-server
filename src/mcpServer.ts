@@ -6,8 +6,8 @@ const app = express();
 app.use(express.json());
 
 app.post("/run-task", async (req, res) => {
-  const { type, xcodeproj, xcworkspace, scheme } = req.body;
-  console.log(`[MCP] Received /run-task with type: ${type}, xcodeproj: ${xcodeproj}, xcworkspace: ${xcworkspace}, scheme: ${scheme}`);
+  const { type, xcodeproj, xcworkspace, scheme, destination } = req.body;
+  console.log(`[MCP] Received /run-task with type: ${type}, xcodeproj: ${xcodeproj}, xcworkspace: ${xcworkspace}, scheme: ${scheme}, destination: ${destination}`);
   const validTypes = Object.values(TaskType);
   if (!type || !validTypes.includes(type)) {
     console.log(`[MCP] Invalid or missing task type: ${type}`);
@@ -16,7 +16,7 @@ app.post("/run-task", async (req, res) => {
   let validation;
   let options;
   if (type === TaskType.TestFix) {
-    options = { xcodeproj, xcworkspace, scheme } as TestFixOptions;
+    options = { xcodeproj, xcworkspace, scheme, destination } as TestFixOptions;
     validation = validateTestFixOptions(options);
   } else if (type === TaskType.LintFix) {
     options = { xcodeproj, xcworkspace } as LintFixOptions;
