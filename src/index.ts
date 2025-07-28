@@ -10,10 +10,14 @@ import { validateTestFixOptions, validateLintFixOptions, TestFixOptions, LintFix
 
 const app = express();
 app.use(express.json());
+app.use((req, res, next) => {
+  console.log(`[MCP] ${req.method} ${req.url} - Session: ${req.headers['mcp-session-id']}`);
+  next();
+});
 
 const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
 
-app.post('/mcp', async (req, res) => {
+app.post('/', async (req, res) => {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   let transport: StreamableHTTPServerTransport;
 
@@ -26,7 +30,7 @@ app.post('/mcp', async (req, res) => {
         transports[sessionId] = transport;
       },
       enableDnsRebindingProtection: true,
-      allowedHosts: ['127.0.0.1'],
+      allowedHosts: ['127.0.0.1', 'localhost', '127.0.0.1:3000', 'localhost:3000'],
     });
     transport.onclose = () => {
       if (transport.sessionId) {
@@ -57,12 +61,27 @@ app.post('/mcp', async (req, res) => {
         if (!validation.valid) {
           return {
             content: [
-              { type: "text", text: `Error: ${validation.error}` }
+              { type: "text", text: `Error: ${validation.error || 'Unknown validation error'}` }
             ]
           };
         }
         try {
           const result = await orchestrateTask(TaskType.TestFix, options);
+          if (typeof result !== 'object') {
+            return {
+              content: [
+                { type: "text", text: `Error: Unexpected result from orchestrateTask` }
+              ]
+            };
+          }
+          // Type guard for error property
+          if (typeof result === 'object' && 'error' in result && typeof (result as any).error === 'string') {
+            return {
+              content: [
+                { type: "text", text: `Error: ${(result as any).error}` }
+              ]
+            };
+          }
           return { content: [{ type: "text", text: JSON.stringify(result) }] };
         } catch (err) {
           const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as Error).message : "Task failed";
@@ -92,12 +111,26 @@ app.post('/mcp', async (req, res) => {
         if (!validation.valid) {
           return {
             content: [
-              { type: "text", text: `Error: ${validation.error}` }
+              { type: "text", text: `Error: ${validation.error || 'Unknown validation error'}` }
             ]
           };
         }
         try {
           const result = await orchestrateTask(TaskType.LintFix, options);
+          if (typeof result !== 'object') {
+            return {
+              content: [
+                { type: "text", text: `Error: Unexpected result from orchestrateTask` }
+              ]
+            };
+          }
+          if (typeof result === 'object' && 'error' in result && typeof (result as any).error === 'string') {
+            return {
+              content: [
+                { type: "text", text: `Error: ${(result as any).error}` }
+              ]
+            };
+          }
           return { content: [{ type: "text", text: JSON.stringify(result) }] };
         } catch (err) {
           const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as Error).message : "Task failed";
@@ -135,8 +168,8 @@ const handleSessionRequest = async (req: express.Request, res: express.Response)
   await transport.handleRequest(req, res);
 };
 
-app.get('/mcp', handleSessionRequest);
-app.delete('/mcp', handleSessionRequest);
+app.get('/', handleSessionRequest);
+app.delete('/', handleSessionRequest);
 
 app.listen(3000);
 
