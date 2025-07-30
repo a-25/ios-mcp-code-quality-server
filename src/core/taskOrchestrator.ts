@@ -2,7 +2,7 @@
 import type { TestFailure } from "./testRunner.js";
 export type TaskResult<T> =
   | { success: true; data: T }
-  | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[] };
+  | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[] };
 import PQueue from "p-queue";
 import { runTestsAndParseFailures } from "./testRunner.js";
 import { getAISuggestion } from "./aiSuggester.js";
@@ -22,8 +22,31 @@ async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3): Promi
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     console.log(`[MCP] 🧪 Attempt ${attempt} of ${maxRetries}`);
     let failures: TestFailure[] = [];
+    let buildErrors: string[] | undefined = undefined;
     try {
-      failures = await runTestsAndParseFailures(options);
+      const result = await runTestsAndParseFailures(options);
+      if (Array.isArray(result)) {
+        failures = result;
+      } else if (result && typeof result === 'object' && 'buildErrors' in result) {
+        buildErrors = result.buildErrors;
+        lastBuildErrors = buildErrors;
+        // AI-powered fix for build errors
+        let aiSuggestions: string[] = [];
+        for (const errLine of buildErrors) {
+          if (errLine.trim().length === 0) continue;
+          const suggestion = await getAISuggestion(
+            `The following Swift build error occurred. Suggest a fix or code change:\n\n${errLine}`
+          );
+          aiSuggestions.push(suggestion);
+          await applySuggestion(suggestion);
+        }
+        return {
+          success: false,
+          error: 'build-error',
+          buildErrors,
+          aiSuggestions
+        };
+      }
     } catch (err: any) {
       const msg = String(err?.message || err);
       if (/no such file|not found|does not exist|missing/i.test(msg)) {
@@ -68,7 +91,7 @@ async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3): Promi
 async function autoCommitFixes(message: string) {
   try {
     await execAsync("git add .");
-    await execAsync(`git commit -m \"${message}\"`);
+    await execAsync(`git commit -m "${message}"`);
     console.log("[MCP] ✅ Auto-committed changes.");
   } catch (err) {
     console.warn("[MCP] Could not commit changes:", err);

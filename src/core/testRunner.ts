@@ -89,7 +89,7 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
   return failures;
 }
 
-export async function runTestsAndParseFailures(options: TestFixOptions): Promise<TestFailure[]> {
+export async function runTestsAndParseFailures(options: TestFixOptions): Promise<TestFailure[] | { buildErrors: string[] }> {
   // Clean previous test artifacts
   const xcresultPath = "./test.xcresult";
   if (await fs.pathExists(xcresultPath)) {
@@ -105,14 +105,30 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
   const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} ${resultBundleArg}`.replace(/\s+/g, ' ').trim();
 
   console.log(`[MCP] Running tests with: ${cmd}`);
-  var testCommandResult: { stdout: string, stderr: string };
+  let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
+  let buildFailed = false;
   try {
     testCommandResult = await execAsync(cmd);
   } catch (err: any) {
-    console.error("[MCP] Error running xcodebuild:", err.stderr || err.message);
-    testCommandResult = { stdout: err.stderr, stderr: err.message };
+    // xcodebuild returns nonzero on test or build failure, so we must parse output
+    testCommandResult = { stdout: err.stdout || err.stderr || '', stderr: err.stderr || err.message || '' };
+    // Look for build failure patterns
+    const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
+    if (/The following build commands failed:|BUILD FAILED|Testing cancelled because the build failed|\*\* TEST FAILED \*\*/i.test(output)) {
+      buildFailed = true;
+      // Extract lines about build failure
+      const buildErrorLines = output.split('\n').filter(line =>
+        /The following build commands failed:|error: |BUILD FAILED|Testing cancelled because the build failed|\*\* TEST FAILED \*\*/i.test(line)
+      );
+      return { buildErrors: buildErrorLines };
+    }
   }
   console.log(`[MCP] xcodebuild output: ${testCommandResult.stdout}, error: ${testCommandResult.stderr}`);
+
+  if (buildFailed) {
+    // Already returned above, but for safety:
+    return { buildErrors: [testCommandResult.stdout, testCommandResult.stderr] };
+  }
 
   if (await fs.pathExists(xcresultPath)) {
     const failures = await parseXcresultForFailures(xcresultPath);
