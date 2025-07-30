@@ -17,13 +17,38 @@ const execAsync = util.promisify(exec);
 
 async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailure[]> {
   const failures: TestFailure[] = [];
+  function collectFailuresFromSubtests(subtests: any[], suiteName: string) {
+    for (const testCase of subtests) {
+      // If this is a test suite, recurse
+      if (testCase.subtests && Array.isArray(testCase.subtests._values) && testCase.subtests._values.length > 0) {
+        collectFailuresFromSubtests(testCase.subtests._values, testCase.name || suiteName);
+      } else if (testCase.status === "Failure") {
+        const attachments: string[] = [];
+        if (testCase.attachments && testCase.attachments._values) {
+          for (const att of testCase.attachments._values) {
+            if (att.filename && att.filename.endsWith(".png")) {
+              attachments.push(att.filename);
+            }
+          }
+        }
+        failures.push({
+          testIdentifier: testCase.identifier || testCase.name,
+          suiteName,
+          file: testCase.fileName,
+          line: testCase.lineNumber,
+          message: testCase.failureMessage,
+          stack: testCase.failureSummaries?._values?.[0]?.message,
+          attachments
+        });
+      }
+    }
+  }
   try {
     const { stdout } = await execAsync(`xcrun xcresulttool get --legacy --format json --path ${xcresultPath}`);
     const result = JSON.parse(stdout);
-    // Traverse actions and tests
     const actions = result.actions._values || [];
     for (const action of actions) {
-      // Parse top-level test failures
+      // Top-level test failures (rare, but keep for completeness)
       const testFailureSummaries = action.actionResult.issues?.testFailureSummaries?._values || [];
       for (const issue of testFailureSummaries) {
         let file = undefined, line = undefined;
@@ -45,6 +70,7 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
           attachments: []
         });
       }
+      // Recursively collect all failures from test summaries
       const testRefs = action.actionResult.testsRef;
       if (!testRefs || typeof testRefs.id !== "string") continue;
       const { stdout: testJson } = await execAsync(`xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} --id ${testRefs.id}`);
@@ -53,29 +79,7 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
       for (const summary of summaries) {
         const suites = summary.tests._values || [];
         for (const suite of suites) {
-          const suiteName = suite.name;
-          const cases = suite.subtests._values || [];
-          for (const testCase of cases) {
-            if (testCase.status === "Failure") {
-              const attachments: string[] = [];
-              if (testCase.attachments && testCase.attachments._values) {
-                for (const att of testCase.attachments._values) {
-                  if (att.filename && att.filename.endsWith(".png")) {
-                    attachments.push(att.filename);
-                  }
-                }
-              }
-              failures.push({
-                testIdentifier: testCase.identifier || testCase.name,
-                suiteName,
-                file: testCase.fileName,
-                line: testCase.lineNumber,
-                message: testCase.failureMessage,
-                stack: testCase.failureSummaries?._values?.[0]?.message,
-                attachments
-              });
-            }
-          }
+          collectFailuresFromSubtests(suite.subtests?._values || [], suite.name);
         }
       }
     }

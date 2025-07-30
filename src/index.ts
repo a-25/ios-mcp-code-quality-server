@@ -1,3 +1,5 @@
+// Explicit result type for orchestrateTask
+type TaskResult<T> = { success: true; data: T } | { success: false; error: string };
 
 import express from "express";
 import { randomUUID } from "node:crypto";
@@ -66,23 +68,62 @@ app.post('/', async (req, res) => {
           };
         }
         try {
-          const result = await orchestrateTask(TaskType.TestFix, options);
-          if (typeof result !== 'object') {
+          const result = await orchestrateTask(TaskType.TestFix, options) as TaskResult<any>;
+          if (!result || typeof result !== 'object' || !('success' in result)) {
             return {
               content: [
-                { type: "text", text: `Error: Unexpected result from orchestrateTask` }
+                { type: "text", text: "❌ Tests could not be completed. The server did not return a valid result. This may indicate a build system error or a misconfiguration. Please check your project/workspace path and try again." }
               ]
             };
           }
-          // Type guard for error property
-          if (typeof result === 'object' && 'error' in result && typeof (result as any).error === 'string') {
+          if (result.success) {
+            return { content: [{ type: "text", text: JSON.stringify(result.data) }] };
+          } else {
+            // If build errors, include them in the response
+            if ('buildErrors' in result && Array.isArray(result.buildErrors) && result.buildErrors.length > 0) {
+              return {
+                content: [
+                  { type: "text", text: `❌ Build errors occurred.\n\n${result.buildErrors.map((e: string) => `- ${e}`).join('\n')}\n\nFull error JSON:\n${JSON.stringify(result, null, 2)}` }
+                ]
+              };
+            }
+            // If test failures, include them in the response
+            if ('testFailures' in result && Array.isArray(result.testFailures) && result.testFailures.length > 0) {
+              return {
+                content: [
+                  { type: "text", text: `❌ Test failures:\n\n${result.testFailures.map((f: any) => `- ${f.testIdentifier}: ${f.message || ''}`).join('\n')}\n\nFull error JSON:\n${JSON.stringify(result, null, 2)}` }
+                ]
+              };
+            }
+            // Custom error messages for known error types
+            if (result.error === 'max-retries') {
+              return {
+                content: [
+                  { type: "text", text: "❌ Tests were rebuilt the maximum number of times, but are still failing. Please review your test failures and code before retrying." }
+                ]
+              };
+            }
+            if (result.error === 'build-error') {
+              return {
+                content: [
+                  { type: "text", text: "❌ Tests failed to build. There was a build error, not just a test failure. Please check your build logs for details and ensure your project builds successfully before running tests." }
+                ]
+              };
+            }
+            if (result.error === 'missing-project') {
+              return {
+                content: [
+                  { type: "text", text: "❌ The .xcworkspace or .xcodeproj file is missing or was not found. Please provide an absolute path to your project or workspace file. Hint: Relative paths may not work—use the full path from the root of your filesystem." }
+                ]
+              };
+            }
+            // Fallback for other errors
             return {
               content: [
-                { type: "text", text: `Error: ${(result as any).error}` }
+                { type: "text", text: `Error: ${result.error}` }
               ]
             };
           }
-          return { content: [{ type: "text", text: JSON.stringify(result) }] };
         } catch (err) {
           const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as Error).message : "Task failed";
           return {
