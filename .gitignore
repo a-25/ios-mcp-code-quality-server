@@ -1,3 +1,17 @@
+# Test coverage reports
+coverage/
+.nyc_output/
+
+# Jest cache
+jest-cache/
+jest-coverage/
+.cache/
+
+# Compiled test output (if using TypeScript)
+*.tsbuildinfo
+
+# Logs
+*.log
 # Logs
 logs/
 *.log

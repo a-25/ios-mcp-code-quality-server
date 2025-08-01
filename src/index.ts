@@ -1,6 +1,3 @@
-// Explicit result type for orchestrateTask
-type TaskResult<T> = { success: true; data: T } | { success: false; error: string };
-
 import express from "express";
 import { randomUUID } from "node:crypto";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -9,6 +6,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { orchestrateTask, TaskType } from "./core/taskOrchestrator.js";
 import { validateTestFixOptions, validateLintFixOptions, TestFixOptions, LintFixOptions } from "./core/taskOptions.js";
+import type { TaskResult } from "./core/taskOrchestrator.js";
 
 const app = express();
 app.use(express.json());
@@ -68,7 +66,30 @@ app.post('/', async (req, res) => {
           };
         }
         try {
-          const result = await orchestrateTask(TaskType.TestFix, options) as TaskResult<any>;
+          const result = await orchestrateTask(TaskType.TestFix, options) as TaskResult;
+          // After receiving the result from orchestrateTask or handleTestFixLoop:
+          if (result && !result.success && result.needsContext) {
+            let contextText = '';
+            if (result.buildErrors && result.buildErrors.length > 0) {
+              contextText += `\nBuild errors:\n${result.buildErrors.join('\n')}`;
+            }
+            if (result.testFailures && result.testFailures.length > 0) {
+              contextText += `\nTest failures:\n${result.testFailures.map((f: any) => {
+                let details = `- ${f.testIdentifier || ''}`;
+                if (f.suiteName) details += `\n  Suite: ${f.suiteName}`;
+                if (f.file) details += `\n  File: ${f.file}`;
+                if (f.line) details += `\n  Line: ${f.line}`;
+                if (f.message) details += `\n  Message: ${f.message}`;
+                if (f.stack) details += `\n  Stack: ${f.stack}`;
+                return details;
+              }).join('\n')}`;
+            }
+            return {
+              content: [
+                { type: "text", text: `⚠️ Incomplete context: ${result.message || 'Please provide the missing context and retry.'}${contextText}` }
+              ]
+            };
+          }
           if (!result || typeof result !== 'object' || !('success' in result)) {
             return {
               content: [

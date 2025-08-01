@@ -1,5 +1,8 @@
 import fetch from "node-fetch";
 import OpenAI from "openai";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export async function getAISuggestion(prompt: string): Promise<string> {
   console.log("[AI Suggestion Prompt]:", prompt);
@@ -7,7 +10,8 @@ export async function getAISuggestion(prompt: string): Promise<string> {
     console.error("OPENAI_API_KEY env variable not set");
     return "[Error: OPENAI_API_KEY not set]";
   }
-  // Uncomment below to use OpenAI
+  return "";
+  // // Uncomment below to use OpenAI
   // const openai = new OpenAI({
   //   apiKey: process.env.OPENAI_API_KEY,
   // });
@@ -19,7 +23,6 @@ export async function getAISuggestion(prompt: string): Promise<string> {
   //   ],
   // });
   // return response.choices[0]?.message?.content || "";
-  return "";
 }
 
 export async function getCopilotAISuggestion(prompt: string): Promise<string> {

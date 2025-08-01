@@ -6,7 +6,8 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "tsc && node dist/index.js",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "test": "jest"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
@@ -21,8 +22,11 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.11.30",
     "eslint": "^8.56.0",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }

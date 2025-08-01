@@ -13,7 +13,8 @@ export type TestFailure = {
   attachments?: string[]; // paths to screenshots
 };
 
-const execAsync = util.promisify(exec);
+
+export const execAsync = util.promisify(exec);
 
 async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailure[]> {
   const failures: TestFailure[] = [];
@@ -73,8 +74,7 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
       // Recursively collect all failures from test summaries
       const testRefs = action.actionResult.testsRef;
       if (!testRefs || typeof testRefs.id !== "string") continue;
-      const { stdout: testJson } = await execAsync(`xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} --id ${testRefs.id}`);
-      const testRoot = JSON.parse(testJson);
+      const testRoot = await getXcresultObject(xcresultPath, testRefs.id);
       const summaries = testRoot.summaries._values || [];
       for (const summary of summaries) {
         const suites = summary.tests._values || [];
@@ -87,6 +87,11 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
     console.error("[MCP] Error parsing xcresult:", err.stderr || err.message);
   }
   return failures;
+}
+
+export async function getXcresultObject(xcresultPath: string, id: string): Promise<any> {
+  const { stdout } = await execAsync(`xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} --id ${id}`);
+  return JSON.parse(stdout);
 }
 
 export async function runTestsAndParseFailures(options: TestFixOptions): Promise<TestFailure[] | { buildErrors: string[] }> {

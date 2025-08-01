@@ -1,13 +1,11 @@
 // Explicit result type for orchestrateTask and helpers
 import type { TestFailure } from "./testRunner.js";
-export type TaskResult<T> =
+export type TaskResult<T = any> =
   | { success: true; data: T }
-  | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[] };
+  | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
 import PQueue from "p-queue";
 import { runTestsAndParseFailures } from "./testRunner.js";
-import { getAISuggestion } from "./aiSuggester.js";
 import { runSwiftLintFix } from "./swiftLint.js";
-import { applySuggestion } from "./suggestionApplier.js";
 import { exec } from "child_process";
 import util from "util";
 import { TestFixOptions } from "./taskOptions.js";
@@ -30,22 +28,15 @@ async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3): Promi
       } else if (result && typeof result === 'object' && 'buildErrors' in result) {
         buildErrors = result.buildErrors;
         lastBuildErrors = buildErrors;
-        // AI-powered fix for build errors
-        let aiSuggestions: string[] = [];
-        for (const errLine of buildErrors) {
-          if (errLine.trim().length === 0) continue;
-          const suggestion = await getAISuggestion(
-            `The following Swift build error occurred. Suggest a fix or code change:\n\n${errLine}`
-          );
-          aiSuggestions.push(suggestion);
-          await applySuggestion(suggestion);
-        }
+        // Instead of calling AI, request more context from the external system
         return {
           success: false,
           error: 'build-error',
           buildErrors,
-          aiSuggestions
-        };
+          aiSuggestions: [],
+          needsContext: true,
+          message: 'Build failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
+        } as any;
       }
     } catch (err: any) {
       const msg = String(err?.message || err);
@@ -68,21 +59,15 @@ async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3): Promi
     }
     lastFailures = failures;
     console.log(`[MCP] ❌ ${failures.length} test(s) failed.`);
-    for (const failure of failures) {
-      let context = "Test Failure:";
-      if (failure.suiteName) context += `\nSuite: ${failure.suiteName}`;
-      if (failure.testIdentifier) context += `\nTest: ${failure.testIdentifier}`;
-      if (failure.file) context += `\nFile: ${failure.file}`;
-      if (failure.line) context += `\nLine: ${failure.line}`;
-      if (failure.message) context += `\nMessage: ${failure.message}`;
-      if (failure.stack) context += `\nStack Trace: ${failure.stack}`;
-      if (failure.attachments && failure.attachments.length > 0) context += `\nAttachments: ${failure.attachments.join(", ")}`;
-      const suggestion = await getAISuggestion(
-        `The following Swift test failed. Suggest a fix:\n\n${context}`
-      );
-      console.log("[AI Suggestion]:", suggestion);
-      await applySuggestion(suggestion);
-    }
+    // Instead of calling AI, request more context from the external system
+    return {
+      success: false,
+      error: 'test-failure',
+      testFailures: failures,
+      aiSuggestions: [],
+      needsContext: true,
+      message: 'Test failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
+    } as any;
   }
   console.log("[MCP] ❌ Tests are still failing after max retries.");
   return { success: false, error: 'max-retries', testFailures: lastFailures };
