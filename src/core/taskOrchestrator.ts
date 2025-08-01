@@ -13,7 +13,7 @@ import { TestFixOptions } from "./taskOptions.js";
 const execAsync = util.promisify(exec);
 const queue = new PQueue({ concurrency: 2 });
 
-async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3): Promise<TaskResult<string>> {
+export async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3): Promise<TaskResult<string>> {
   console.log(`[MCP] TestFix options:`, options);
   let lastFailures: TestFailure[] = [];
   let lastBuildErrors: string[] = [];
@@ -83,7 +83,7 @@ async function autoCommitFixes(message: string) {
   }
 }
 
-async function handleLintFix(path: string): Promise<TaskResult<string>> {
+export async function handleLintFix(path: string): Promise<TaskResult<string>> {
   console.log(`[MCP] Running SwiftLint fix on: ${path}`);
   try {
     const output = await runSwiftLintFix(path);
