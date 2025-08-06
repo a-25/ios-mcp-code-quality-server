@@ -89,8 +89,12 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
   return failures;
 }
 
-export async function getXcresultObject(xcresultPath: string, id: string): Promise<any> {
-  const { stdout } = await execAsync(`xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} --id ${id}`);
+export async function getXcresultObject(
+  xcresultPath: string,
+  id: string,
+  execAsyncImpl: typeof execAsync = execAsync
+): Promise<any> {
+  const { stdout } = await execAsyncImpl(`xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} --id ${id}`);
   return JSON.parse(stdout);
 }
 

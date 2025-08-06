@@ -1,13 +1,25 @@
-import { getXcresultObject, runTestsAndParseFailures } from '../core/testRunner.js';
-import * as testRunner from '../core/testRunner.js';
+
 import testFailureMock from './mockData/testFailureMock.json' with { type: 'json' };
 import { vi } from 'vitest';
 
+// Mock execAsync before importing getXcresultObject
+
+vi.mock('../core/testRunner.js', async () => {
+  const actual = await vi.importActual('../core/testRunner.js');
+  return {
+    ...actual,
+    execAsync: vi.fn().mockResolvedValue({ stdout: JSON.stringify(testFailureMock) }),
+  };
+});
+
+import { getXcresultObject, runTestsAndParseFailures } from '../core/testRunner.js';
+
 describe('getXcresultObject', () => {
   it('should parse xcresult JSON from mocked execAsync', async () => {
-    vi.spyOn(testRunner as any, 'execAsync').mockResolvedValue({ stdout: JSON.stringify(testFailureMock) });
-    const result = await getXcresultObject('dummy.xcresult', 'dummy-id');
+    const mockExecAsync = vi.fn().mockResolvedValue({ stdout: JSON.stringify(testFailureMock) });
+    const result = await getXcresultObject('dummy.xcresult', 'dummy-id', mockExecAsync);
     expect(result).toEqual(testFailureMock);
+    expect(mockExecAsync).toHaveBeenCalled();
   });
 });
 

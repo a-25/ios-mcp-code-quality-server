@@ -5,9 +5,9 @@
   "description": "A server for analyzing iOS MCP code quality using AI suggestions and test results.",
   "main": "dist/index.js",
   "scripts": {
-    "start": "tsc && node dist/index.js",
+    "start": "tsc --noEmit false && node dist/index.js",
     "lint": "eslint . --ext .ts",
-    "test": "jest"
+    "test": "vitest"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
