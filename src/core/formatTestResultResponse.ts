@@ -38,7 +38,7 @@ export function formatTestResultResponse(
       content: [
         {
           type: 'text',
-          text: '[context incomplete] ' + (result.message || 'Please provide the missing context and retry.') + contextText,
+          text: 'Incomplete context: ' + (result.message || 'Please provide the missing context and retry.') + contextText,
           _meta: undefined
         },
       ],

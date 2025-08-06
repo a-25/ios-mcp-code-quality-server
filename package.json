@@ -7,7 +7,7 @@
   "scripts": {
     "start": "tsc --noEmit false && node dist/index.js",
     "lint": "eslint . --ext .ts",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",

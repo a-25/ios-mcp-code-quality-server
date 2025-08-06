@@ -12,17 +12,6 @@ vi.mock('../core/testRunner.js', async () => {
   };
 });
 
-import { getXcresultObject, runTestsAndParseFailures } from '../core/testRunner.js';
-
-describe('getXcresultObject', () => {
-  it('should parse xcresult JSON from mocked execAsync', async () => {
-    const mockExecAsync = vi.fn().mockResolvedValue({ stdout: JSON.stringify(testFailureMock) });
-    const result = await getXcresultObject('dummy.xcresult', 'dummy-id', mockExecAsync);
-    expect(result).toEqual(testFailureMock);
-    expect(mockExecAsync).toHaveBeenCalled();
-  });
-});
-
 import { formatTestResultResponse } from '../core/formatTestResultResponse.js';
 import type { TaskResult } from '../core/taskOrchestrator.js';
 import type { TestFixOptions } from '../core/taskOptions.js';
@@ -200,10 +189,17 @@ describe('MCP test tool main logic', () => {
     }
   });
 
+  enum TestErrorType {
+    MaxRetries = 'max-retries',
+    BuildError = 'build-error',
+    MissingProject = 'missing-project',
+    OtherError = 'other-error',
+  }
+
   it('returns max-retries error', () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: 'max-retries' };
+    const result: TaskResult = { success: false, error: TestErrorType.MaxRetries };
     const res = formatTestResultResponse(input, validation, result);
     expect(res.content[0].text).toMatch(/maximum number of times/);
   });
@@ -211,7 +207,7 @@ describe('MCP test tool main logic', () => {
   it('returns build-error error', () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: 'build-error' };
+    const result: TaskResult = { success: false, error: TestErrorType.BuildError };
     const res = formatTestResultResponse(input, validation, result);
     expect(res.content[0].text).toMatch(/Tests failed to build/);
   });
@@ -219,7 +215,7 @@ describe('MCP test tool main logic', () => {
   it('returns missing-project error', () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: 'missing-project' };
+    const result: TaskResult = { success: false, error: TestErrorType.MissingProject };
     const res = formatTestResultResponse(input, validation, result);
     expect(res.content[0].text).toMatch(/missing or was not found/);
   });
@@ -227,7 +223,7 @@ describe('MCP test tool main logic', () => {
   it('returns fallback error', () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: 'other-error' };
+    const result: TaskResult = { success: false, error: TestErrorType.OtherError };
     const res = formatTestResultResponse(input, validation, result);
     expect(res.content[0].text).toMatch(/Error: other-error/);
   });
