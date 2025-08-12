@@ -102,7 +102,12 @@ export async function getXcresultObject(
   return JSON.parse(stdout);
 }
 
-export async function runTestsAndParseFailures(options: TestFixOptions): Promise<TestFailure[] | { buildErrors: string[] }> {
+export interface TestRunResult {
+  buildErrors: string[];
+  testFailures: TestFailure[];
+}
+
+export async function runTestsAndParseFailures(options: TestFixOptions): Promise<TestRunResult> {
   // Clean previous test artifacts
   const xcresultPath = "./test.xcresult";
   if (await fs.pathExists(xcresultPath)) {
@@ -125,6 +130,8 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
   const errFile = './xcodebuild.stderr.log';
   let outStream: fs.WriteStream | undefined;
   let errStream: fs.WriteStream | undefined;
+  let buildErrors: string[] = [];
+  let testFailures: TestFailure[] = [];
   try {
     // Stream output to files to avoid memory limits
     outStream = fs.createWriteStream(outFile);
@@ -136,9 +143,7 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
       child.on('close', resolve);
       child.on('error', reject);
     });
-    // Always end streams after process closes
-    if (outStream) outStream.end();
-    if (errStream) errStream.end();
+    // Do not call .end() on streams after piping; they close automatically when the child process ends
     // Wait for streams to finish writing, but with a timeout to avoid hanging forever
     await Promise.all([
       new Promise<void>(res => {
@@ -156,7 +161,8 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
     };
   } catch (err: any) {
     testCommandResult = { stdout: '', stderr: err?.message || '' };
-    return { buildErrors: [testCommandResult.stdout, testCommandResult.stderr] };
+    buildErrors = [testCommandResult.stdout, testCommandResult.stderr];
+    return { buildErrors, testFailures: [] };
   } finally {
     // Ensure streams are closed and files are cleaned up
     if (outStream && !outStream.closed) outStream.end();
@@ -164,17 +170,15 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
     try { await fs.remove(outFile); } catch {}
     try { await fs.remove(errFile); } catch {}
   }
-  const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
+  // const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
   // Look for build failure patterns
-  if (/Testing failed:/i.test(output)) {
-    return { buildErrors: [testCommandResult.stdout, testCommandResult.stderr] };
-  }
+  // if (/Testing failed:/i.test(output)) {
+  //   testFailures = [testCommandResult.stdout, testCommandResult.stderr];
+  // }
   console.log(`[MCP] xcodebuild output: ${testCommandResult.stdout}, error: ${testCommandResult.stderr}`);
 
   if (await fs.pathExists(xcresultPath)) {
-    const failures = await parseXcresultForFailures(xcresultPath);
-    return failures;
+    testFailures = await parseXcresultForFailures(xcresultPath);
   }
-  // If xcresultPath does not exist, return empty array to avoid hanging
-  return [];
+  return { buildErrors, testFailures };
 }

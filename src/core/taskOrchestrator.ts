@@ -1,5 +1,5 @@
 // Explicit result type for orchestrateTask and helpers
-import type { TestFailure } from "./testRunner.js";
+import type { TestFailure, TestRunResult } from "./testRunner.js";
 export type TaskResult<T = any> =
   | { success: true; data: T }
   | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
@@ -19,25 +19,39 @@ export async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3)
   let lastBuildErrors: string[] = [];
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     console.log(`[MCP] 🧪 Attempt ${attempt} of ${maxRetries}`);
-    let failures: TestFailure[] = [];
-    let buildErrors: string[] | undefined = undefined;
     try {
-      const result = await runTestsAndParseFailures(options);
-      if (Array.isArray(result)) {
-        failures = result;
-      } else if (result && typeof result === 'object' && 'buildErrors' in result) {
-        buildErrors = result.buildErrors;
-        lastBuildErrors = buildErrors;
+      const result: TestRunResult = await runTestsAndParseFailures(options);
+      lastBuildErrors = result.buildErrors || [];
+      lastFailures = result.testFailures || [];
+      if (result.buildErrors && result.buildErrors.length > 0) {
         // Instead of calling AI, request more context from the external system
         return {
           success: false,
           error: 'build-error',
-          buildErrors,
+          buildErrors: result.buildErrors,
           aiSuggestions: [],
           needsContext: true,
           message: 'Build failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
         } as any;
       }
+      if (!result.testFailures || result.testFailures.length === 0) {
+        console.log("[MCP] ✅ All tests passed.");
+        try {
+          await autoCommitFixes("Fix: auto-applied test failure resolutions");
+        } catch {}
+        return { success: true, data: "All tests passed and fixes committed." };
+      }
+      lastFailures = result.testFailures;
+      console.log(`[MCP] ❌ ${result.testFailures.length} test(s) failed.`);
+      // Instead of calling AI, request more context from the external system
+      return {
+        success: false,
+        error: 'test-failure',
+        testFailures: result.testFailures,
+        aiSuggestions: [],
+        needsContext: true,
+        message: 'Test failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
+      } as any;
     } catch (err: any) {
       const msg = String(err?.message || err);
       if (/no such file|not found|does not exist|missing/i.test(msg)) {
@@ -50,24 +64,6 @@ export async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3)
       lastBuildErrors.push(msg);
       return { success: false, error: msg, buildErrors: lastBuildErrors };
     }
-    if (failures.length === 0) {
-      console.log("[MCP] ✅ All tests passed.");
-      try {
-        await autoCommitFixes("Fix: auto-applied test failure resolutions");
-      } catch {}
-      return { success: true, data: "All tests passed and fixes committed." };
-    }
-    lastFailures = failures;
-    console.log(`[MCP] ❌ ${failures.length} test(s) failed.`);
-    // Instead of calling AI, request more context from the external system
-    return {
-      success: false,
-      error: 'test-failure',
-      testFailures: failures,
-      aiSuggestions: [],
-      needsContext: true,
-      message: 'Test failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
-    } as any;
   }
   console.log("[MCP] ❌ Tests are still failing after max retries.");
   return { success: false, error: 'max-retries', testFailures: lastFailures };
