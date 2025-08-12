@@ -45,8 +45,8 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
     }
   }
   try {
-    const { stdout } = await execAsync(`xcrun xcresulttool get --legacy --format json --path ${xcresultPath}`);
-    const result = JSON.parse(stdout);
+    // Use getXcresultObject to get the root xcresult object
+    const result = await getXcresultObject(xcresultPath, undefined as any as string, execAsync);
     const actions = result.actions._values || [];
     for (const action of actions) {
       // Top-level test failures (rare, but keep for completeness)
@@ -55,7 +55,7 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
         let file = undefined, line = undefined;
         if (issue.documentLocationInCreatingWorkspace?.url) {
           const url = issue.documentLocationInCreatingWorkspace.url._value;
-          const match = url.match(/file:\/\/\/(.*)#EndingLineNumber=(\d+)/);
+          const match = url.match(/file:\/\/(.*)#EndingLineNumber=(\d+)/);
           if (match) {
             file = match[1];
             line = parseInt(match[2], 10);
@@ -115,7 +115,6 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
 
   console.log(`[MCP] Running tests with: ${cmd}`);
   let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
-  let buildFailed = false;
   try {
     testCommandResult = await execAsync(cmd);
   } catch (err: any) {
@@ -123,21 +122,11 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
     testCommandResult = { stdout: err.stdout || err.stderr || '', stderr: err.stderr || err.message || '' };
     // Look for build failure patterns
     const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
-    if (/The following build commands failed:|BUILD FAILED|Testing cancelled because the build failed|\*\* TEST FAILED \*\*/i.test(output)) {
-      buildFailed = true;
-      // Extract lines about build failure
-      const buildErrorLines = output.split('\n').filter(line =>
-        /The following build commands failed:|error: |BUILD FAILED|Testing cancelled because the build failed|\*\* TEST FAILED \*\*/i.test(line)
-      );
-      return { buildErrors: buildErrorLines };
+    if (/xcodebuild: error/i.test(output)) {
+      return { buildErrors: [testCommandResult.stdout, testCommandResult.stderr] };
     }
   }
   console.log(`[MCP] xcodebuild output: ${testCommandResult.stdout}, error: ${testCommandResult.stderr}`);
-
-  if (buildFailed) {
-    // Already returned above, but for safety:
-    return { buildErrors: [testCommandResult.stdout, testCommandResult.stderr] };
-  }
 
   if (await fs.pathExists(xcresultPath)) {
     const failures = await parseXcresultForFailures(xcresultPath);
