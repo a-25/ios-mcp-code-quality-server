@@ -1,7 +1,8 @@
 import { TestFixOptions } from "./taskOptions.js";
-import { exec, spawn } from "child_process";
+import { exec } from "child_process";
 import util from "util";
 import fs from "fs-extra";
+import { spawnAndCollectOutput } from "../utils/spawnAndCollectOutput.js";
 
 export type TestFailure = {
   testIdentifier: string;
@@ -12,9 +13,6 @@ export type TestFailure = {
   stack?: string;
   attachments?: string[]; // paths to screenshots
 };
-
-
-
 
 async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailure[]> {
   const failures: TestFailure[] = [];
@@ -93,12 +91,15 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
 
 export async function getXcresultObject(
   xcresultPath: string,
-  id: string,
+  id?: string,
   execAsyncImpl?: (cmd: string) => Promise<{ stdout: string }>
 ): Promise<any> {
   // Use a local execAsync if not provided
   const execAsync = execAsyncImpl || util.promisify(exec);
-  const { stdout } = await execAsync(`xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} --id ${id}`);
+  // Only include --id if id is provided and not undefined/null/empty
+  const idArg = id ? `--id ${id}` : "";
+  const cmd = `xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} ${idArg}`.replace(/\s+/g, ' ').trim();
+  const { stdout } = await execAsync(cmd);
   return JSON.parse(stdout);
 }
 
@@ -107,7 +108,10 @@ export interface TestRunResult {
   testFailures: TestFailure[];
 }
 
-export async function runTestsAndParseFailures(options: TestFixOptions): Promise<TestRunResult> {
+export async function runTestsAndParseFailures(
+  options: TestFixOptions,
+  spawnAndCollectOutputImpl: (cmd: string) => Promise<{ stdout: string, stderr: string }> = spawnAndCollectOutput
+): Promise<TestRunResult> {
   // Clean previous test artifacts
   const xcresultPath = "./test.xcresult";
   if (await fs.pathExists(xcresultPath)) {
@@ -124,57 +128,22 @@ export async function runTestsAndParseFailures(options: TestFixOptions): Promise
 
   console.log(`[MCP] Running tests with: ${cmd}`);
 
-  let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
-  let exitCode: number | null = null;
-  const outFile = './xcodebuild.stdout.log';
-  const errFile = './xcodebuild.stderr.log';
-  let outStream: fs.WriteStream | undefined;
-  let errStream: fs.WriteStream | undefined;
   let buildErrors: string[] = [];
   let testFailures: TestFailure[] = [];
+  let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
   try {
-    // Stream output to files to avoid memory limits
-    outStream = fs.createWriteStream(outFile);
-    errStream = fs.createWriteStream(errFile);
-    const child = spawn(cmd, { shell: true });
-    child.stdout.pipe(outStream);
-    child.stderr.pipe(errStream);
-    exitCode = await new Promise((resolve, reject) => {
-      child.on('close', resolve);
-      child.on('error', reject);
-    });
-    // Do not call .end() on streams after piping; they close automatically when the child process ends
-    // Wait for streams to finish writing, but with a timeout to avoid hanging forever
-    await Promise.all([
-      new Promise<void>(res => {
-        if (outStream) outStream.on('finish', () => res()); else res();
-        setTimeout(res, 5000); // 5s safety timeout
-      }),
-      new Promise<void>(res => {
-        if (errStream) errStream.on('finish', () => res()); else res();
-        setTimeout(res, 5000);
-      })
-    ]);
-    testCommandResult = {
-      stdout: await fs.readFile(outFile, 'utf8'),
-      stderr: await fs.readFile(errFile, 'utf8'),
-    };
+    testCommandResult = await spawnAndCollectOutputImpl(cmd);
+    // Detect build failure marker in output
+    const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
+    if (/The following build commands failed:/i.test(output)) {
+      buildErrors = [output];
+      return { buildErrors, testFailures: [] };
+    }
   } catch (err: any) {
     testCommandResult = { stdout: '', stderr: err?.message || '' };
     buildErrors = [testCommandResult.stdout, testCommandResult.stderr];
     return { buildErrors, testFailures: [] };
-  } finally {
-    // Ensure streams are closed and files are cleaned up
-    if (outStream && !outStream.closed) outStream.end();
-    if (errStream && !errStream.closed) errStream.end();
-    try { await fs.remove(outFile); } catch {}
-    try { await fs.remove(errFile); } catch {}
   }
-  // const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
-  // Look for build failure patterns
-  // if (/Testing failed:/i.test(output)) {
-  //   testFailures = [testCommandResult.stdout, testCommandResult.stderr];
-  // }
   console.log(`[MCP] xcodebuild output: ${testCommandResult.stdout}, error: ${testCommandResult.stderr}`);
 
   if (await fs.pathExists(xcresultPath)) {

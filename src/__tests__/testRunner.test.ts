@@ -17,6 +17,20 @@ import type { TaskResult } from '../core/taskOrchestrator.js';
 import type { TestFixOptions } from '../core/taskOptions.js';
 
 describe('MCP test tool main logic', () => {
+  it('returns build error and no test failures when build fails', async () => {
+    // Load the build failure output from a file
+    const fs = require('fs');
+    const path = require('path');
+    const buildFailureOutput = fs.readFileSync(path.join(__dirname, 'mockData', 'buildFailureOutput.txt'), 'utf8');
+    const { runTestsAndParseFailures } = await import('../core/testRunner.js');
+    // Use a mock function for spawnAndCollectOutputImpl
+    const mockSpawnAndCollectOutput = async () => ({ stdout: buildFailureOutput, stderr: '' });
+    const options = { scheme: 'TestScheme', xcodeproj: 'TestProj.xcodeproj', xcworkspace: 'TestWorkspace.xcworkspace', destination: 'platform=iOS Simulator,name=iPhone 16' };
+    const result = await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
+    expect(result.buildErrors.length).toBeGreaterThan(0);
+    expect(result.buildErrors[0]).toContain('The following build commands failed:');
+    expect(result.testFailures).toEqual([]);
+  });
   const getValidation = (input: any) => ({ valid: !input.invalid, error: input.invalid ? 'Invalid input' : undefined });
 
   const baseInput: TestFixOptions = {

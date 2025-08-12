@@ -1,0 +1,12 @@
+Testing failed:
+	Value of type 'Plant' has no member 'description1234'
+	Testing cancelled because the build failed.
+
+** TEST FAILED **
+
+
+The following build commands failed:
+	SwiftCompile normal arm64 /Users/a-25/Projects/plantdort/Plantdort/PlantdortUnitTests/PlantdortUnitTests.swift (in target 'PlantdortUnitTests' from project 'Plantdort')
+	SwiftCompile normal arm64 Compiling\ PlantdortUnitTests.swift /Users/a-25/Projects/plantdort/Plantdort/PlantdortUnitTests/PlantdortUnitTests.swift (in target 'PlantdortUnitTests' from project 'Plantdort')
+	Testing project Plantdort with scheme Plantdort
+(3 failures)
