@@ -10,7 +10,7 @@ import { TestFixOptions } from "./taskOptions.js";
 import { exec } from "child_process";
 import util from "util";
 import fs from "fs-extra";
-import { spawnAndCollectOutput, SpawnOutputFiles, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
+import { spawnAndCollectOutput, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
 
 export type TestFailure = {
   testIdentifier: string;
@@ -54,7 +54,7 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
     // Use a local execAsync for xcresulttool (not for xcodebuild test)
     const execAsync = util.promisify(exec);
     // Use getXcresultObject to get the root xcresult object
-    const result = await getXcresultObject(xcresultPath, undefined as any as string, execAsync);
+    const result = await getXcresultObject(xcresultPath, undefined, execAsync);
     const actions = result.actions._values || [];
     for (const action of actions) {
       // Top-level test failures (rare, but keep for completeness)
@@ -118,7 +118,7 @@ export interface TestRunResult {
 
 export async function runTestsAndParseFailures(
   options: TestFixOptions,
-  spawnAndCollectOutputImpl: (cmd: string, files: SpawnOutputFiles) => Promise<SpawnOutputResult> = spawnAndCollectOutput
+  spawnAndCollectOutputImpl: (cmd: string) => Promise<SpawnOutputResult> = spawnAndCollectOutput
 ): Promise<TestRunResult> {
   // Clean previous test artifacts
   // Generate a unique folder for this run
@@ -145,7 +145,7 @@ export async function runTestsAndParseFailures(
   let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
   let cleanupDone = false;
   try {
-    testCommandResult = await spawnAndCollectOutputImpl(cmd, { outFile, errFile });
+  testCommandResult = await spawnAndCollectOutputImpl(cmd);
     // Detect build failure marker in output
     const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
     if (/The following build commands failed:/i.test(output)) {

@@ -1,5 +1,6 @@
 
-import testFailureMock from './mockData/testFailureMock.json' with { type: 'json' };
+// import testFailureMock from './mockData/testFailureMock.json' with { type: 'json' };
+const testFailureMock = require('./mockData/testFailureMock.json');
 import { vi } from 'vitest';
 
 // Mock execAsync before importing getXcresultObject
@@ -24,7 +25,7 @@ describe('MCP test tool main logic', () => {
     const buildFailureOutput = fs.readFileSync(path.join(__dirname, 'mockData', 'buildFailureOutput.txt'), 'utf8');
     const { runTestsAndParseFailures } = await import('../core/testRunner.js');
     // Use a mock function for spawnAndCollectOutputImpl
-  const mockSpawnAndCollectOutput = async (cmd: string, files?: { outFile: string, errFile: string }) => ({ stdout: buildFailureOutput, stderr: '' });
+  const mockSpawnAndCollectOutput = async (cmd: string) => ({ stdout: buildFailureOutput, stderr: '' });
   const options = { scheme: 'TestScheme', xcodeproj: 'TestProj.xcodeproj', xcworkspace: 'TestWorkspace.xcworkspace', destination: 'platform=iOS Simulator,name=iPhone 16' };
   const result = await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
     expect(result.buildErrors.length).toBeGreaterThan(0);
