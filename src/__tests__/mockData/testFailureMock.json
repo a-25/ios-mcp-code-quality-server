@@ -89,7 +89,7 @@
                       "_type" : {
                         "_name" : "String"
                       },
-                      "_value" : "file:\/\/\/Users\/a-25\/Projects\/plantdort\/Plantdort\/PlantdortUnitTests\/PlantdortUnitTests.swift#EndingLineNumber=22&StartingLineNumber=22"
+                      "_value" : "file:\/\/\/Users\/user\/Projects\/TestProject\/TestProjectUnitTests\/TestProjectUnitTests.swift#EndingLineNumber=22&StartingLineNumber=22"
                     }
                   },
                   "issueType" : {
@@ -108,7 +108,7 @@
                     "_type" : {
                       "_name" : "String"
                     },
-                    "_value" : "PlantdortUnitTests.testDescription()"
+                    "_value" : "TestProjectUnitTests.testDescription()"
                   }
                 },
                 {
@@ -132,7 +132,7 @@
                       "_type" : {
                         "_name" : "String"
                       },
-                      "_value" : "file:\/\/\/Users\/a-25\/Projects\/plantdort\/Plantdort\/PlantdortUnitTests\/PlantdortUnitTests.swift#EndingLineNumber=27&StartingLineNumber=27"
+                      "_value" : "file:\/\/\/Users\/user\/Projects\/TestProject\/TestProjectUnitTests\/TestProjectUnitTests.swift#EndingLineNumber=27&StartingLineNumber=27"
                     }
                   },
                   "issueType" : {
@@ -151,7 +151,7 @@
                     "_type" : {
                       "_name" : "String"
                     },
-                    "_value" : "PlantdortUnitTests.testTestDescription()"
+                    "_value" : "TestProjectUnitTests.testTestDescription()"
                   }
                 }
               ]
@@ -267,7 +267,7 @@
                       "_type" : {
                         "_name" : "String"
                       },
-                      "_value" : "file:\/\/\/Users\/a-25\/Library\/Developer\/Xcode\/DerivedData\/Plantdort-fqqprowksqfoxnctjvrrrhilwtyg\/SourcePackages\/checkouts\/firebase-ios-sdk\/Package.swift#Timestamp=775746942.8574409&XcodeLocation=%7B%22Selection%22:%7B%22Editor%22:%22Xcode3BuildSettingsEditor%22,%22Target%22:%22Firebase%22,%22Xcode3BuildSettingsEditorLocations%22:%5B%7B%22Selected%20Build%20Properties%22:%5B%22DEFINES_MODULE%22%5D%7D%5D%7D%7D"
+                      "_value" : "file:\/\/\/Users\/user\/Library\/Developer\/Xcode\/DerivedData\/TestProject-fqqprowksqfoxnctjvrrrhilwtyg\/SourcePackages\/checkouts\/firebase-ios-sdk\/Package.swift#Timestamp=775746942.8574409&XcodeLocation=%7B%22Selection%22:%7B%22Editor%22:%22Xcode3BuildSettingsEditor%22,%22Target%22:%22Firebase%22,%22Xcode3BuildSettingsEditorLocations%22:%5B%7B%22Selected%20Build%20Properties%22:%5B%22DEFINES_MODULE%22%5D%7D%5D%7D%7D"
                     }
                   },
                   "issueType" : {
@@ -297,7 +297,7 @@
                     "_type" : {
                       "_name" : "String"
                     },
-                    "_value" : "no rule to process file '\/Users\/a-25\/Projects\/plantdort\/Plantdort\/Plantdort\/Experience.rcproject' of type 'folder' for architecture 'arm64'"
+                    "_value" : "no rule to process file '\/Users\/user\/Projects\/TestProject\/TestProject\/Experience.rcproject' of type 'folder' for architecture 'arm64'"
                   }
                 }
               ]
@@ -647,13 +647,13 @@
           "_type" : {
             "_name" : "String"
           },
-          "_value" : "Plantdort"
+          "_value" : "TestProject"
         },
         "title" : {
           "_type" : {
             "_name" : "String"
           },
-          "_value" : "Testing project Plantdort with scheme Plantdort"
+          "_value" : "Testing project TestProject with scheme TestProject"
         }
       }
     ]
@@ -688,7 +688,7 @@
               "_type" : {
                 "_name" : "String"
               },
-              "_value" : "file:\/\/\/Users\/a-25\/Projects\/plantdort\/Plantdort\/PlantdortUnitTests\/PlantdortUnitTests.swift#EndingLineNumber=22&StartingLineNumber=22"
+              "_value" : "file:\/\/\/Users\/user\/Projects\/TestProject\/TestProjectUnitTests\/TestProjectUnitTests.swift#EndingLineNumber=22&StartingLineNumber=22"
             }
           },
           "issueType" : {
@@ -707,7 +707,7 @@
             "_type" : {
               "_name" : "String"
             },
-            "_value" : "PlantdortUnitTests.testDescription()"
+            "_value" : "TestProjectUnitTests.testDescription()"
           }
         },
         {
@@ -731,7 +731,7 @@
               "_type" : {
                 "_name" : "String"
               },
-              "_value" : "file:\/\/\/Users\/a-25\/Projects\/plantdort\/Plantdort\/PlantdortUnitTests\/PlantdortUnitTests.swift#EndingLineNumber=27&StartingLineNumber=27"
+              "_value" : "file:\/\/\/Users\/user\/Projects\/TestProject\/TestProjectUnitTests\/TestProjectUnitTests.swift#EndingLineNumber=27&StartingLineNumber=27"
             }
           },
           "issueType" : {
@@ -750,7 +750,7 @@
             "_type" : {
               "_name" : "String"
             },
-            "_value" : "PlantdortUnitTests.testTestDescription()"
+            "_value" : "TestProjectUnitTests.testTestDescription()"
           }
         }
       ]
@@ -778,7 +778,7 @@
               "_type" : {
                 "_name" : "String"
               },
-              "_value" : "file:\/\/\/Users\/a-25\/Library\/Developer\/Xcode\/DerivedData\/Plantdort-fqqprowksqfoxnctjvrrrhilwtyg\/SourcePackages\/checkouts\/firebase-ios-sdk\/Package.swift#Timestamp=775746942.8574409&XcodeLocation=%7B%22Selection%22:%7B%22Editor%22:%22Xcode3BuildSettingsEditor%22,%22Target%22:%22Firebase%22,%22Xcode3BuildSettingsEditorLocations%22:%5B%7B%22Selected%20Build%20Properties%22:%5B%22DEFINES_MODULE%22%5D%7D%5D%7D%7D"
+              "_value" : "file:\/\/\/Users\/user\/Library\/Developer\/Xcode\/DerivedData\/TestProject-fqqprowksqfoxnctjvrrrhilwtyg\/SourcePackages\/checkouts\/firebase-ios-sdk\/Package.swift#Timestamp=775746942.8574409&XcodeLocation=%7B%22Selection%22:%7B%22Editor%22:%22Xcode3BuildSettingsEditor%22,%22Target%22:%22Firebase%22,%22Xcode3BuildSettingsEditorLocations%22:%5B%7B%22Selected%20Build%20Properties%22:%5B%22DEFINES_MODULE%22%5D%7D%5D%7D%7D"
             }
           },
           "issueType" : {
@@ -808,7 +808,7 @@
             "_type" : {
               "_name" : "String"
             },
-            "_value" : "no rule to process file '\/Users\/a-25\/Projects\/plantdort\/Plantdort\/Plantdort\/Experience.rcproject' of type 'folder' for architecture 'arm64'"
+            "_value" : "no rule to process file '\/Users\/user\/Projects\/TestProject\/TestProject\/Experience.rcproject' of type 'folder' for architecture 'arm64'"
           }
         }
       ]
