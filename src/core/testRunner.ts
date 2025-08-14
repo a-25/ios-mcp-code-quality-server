@@ -1,3 +1,8 @@
+async function cleanupRunDir(runDir: string): Promise<void> {
+  try {
+    await fs.rm(runDir, { recursive: true, force: true });
+  } catch { }
+}
 import { TestFixOptions } from "./taskOptions.js";
 import { exec } from "child_process";
 import util from "util";
@@ -135,6 +140,7 @@ export async function runTestsAndParseFailures(
   let buildErrors: string[] = [];
   let testFailures: TestFailure[] = [];
   let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
+  let cleanupDone = false;
   try {
     // Support both 1-arg and 2-arg signatures for spawnAndCollectOutputImpl
     if (spawnAndCollectOutputImpl.length === 1) {
@@ -146,11 +152,15 @@ export async function runTestsAndParseFailures(
     const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
     if (/The following build commands failed:/i.test(output)) {
       buildErrors = [output];
+      await cleanupRunDir(runDir);
+      cleanupDone = true;
       return { buildErrors, testFailures: [] };
     }
   } catch (err: any) {
     testCommandResult = { stdout: '', stderr: err?.message || '' };
     buildErrors = [testCommandResult.stdout, testCommandResult.stderr];
+    await cleanupRunDir(runDir);
+    cleanupDone = true;
     return { buildErrors, testFailures: [] };
   }
   console.log(`[MCP] xcodebuild output: ${testCommandResult.stdout}, error: ${testCommandResult.stderr}`);
@@ -158,7 +168,8 @@ export async function runTestsAndParseFailures(
   if (await fs.pathExists(xcresultPath)) {
     testFailures = await parseXcresultForFailures(xcresultPath);
   }
-  // Clean up the runDir after usage
-  try { await fs.remove(runDir); } catch {}
+  if (!cleanupDone) {
+    await cleanupRunDir(runDir);
+  }
   return { buildErrors, testFailures };
 }
