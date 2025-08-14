@@ -12,8 +12,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
     "@types/express": "^5.0.3",
-    "dotenv": "^16.3.1",
-    "eventemitter3": "^5.0.1",
     "execa": "^8.0.1",
     "express": "^5.1.0",
     "fs-extra": "^11.2.0",
@@ -25,12 +23,10 @@
     "@types/fs-extra": "^11.0.4",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.11.30",
-    "@vitest/coverage-c8": "^0.33.0",
     "@vitest/ui": "^3.2.4",
     "eslint": "^8.56.0",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
     "vitest": "^3.2.4"
   }

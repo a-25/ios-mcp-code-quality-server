@@ -13,69 +13,44 @@ import { TestFixOptions } from "./taskOptions.js";
 const execAsync = util.promisify(exec);
 const queue = new PQueue({ concurrency: 2 });
 
-export async function handleTestFixLoop(options: TestFixOptions, maxRetries = 3): Promise<TaskResult<string>> {
+export async function handleTestFixLoop(options: TestFixOptions): Promise<TaskResult<string>> {
   console.log(`[MCP] TestFix options:`, options);
-  let lastFailures: TestFailure[] = [];
-  let lastBuildErrors: string[] = [];
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    console.log(`[MCP] 🧪 Attempt ${attempt} of ${maxRetries}`);
-    try {
-      const result: TestRunResult = await runTestsAndParseFailures(options);
-      lastBuildErrors = result.buildErrors || [];
-      lastFailures = result.testFailures || [];
-      if (result.buildErrors && result.buildErrors.length > 0) {
-        // Instead of calling AI, request more context from the external system
-        return {
-          success: false,
-          error: 'build-error',
-          buildErrors: result.buildErrors,
-          aiSuggestions: [],
-          needsContext: true,
-          message: 'Build failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
-        } as any;
-      }
-      if (!result.testFailures || result.testFailures.length === 0) {
-        console.log("[MCP] ✅ All tests passed.");
-        try {
-          await autoCommitFixes("Fix: auto-applied test failure resolutions");
-        } catch {}
-        return { success: true, data: "All tests passed and fixes committed." };
-      }
-      lastFailures = result.testFailures;
-      console.log(`[MCP] ❌ ${result.testFailures.length} test(s) failed.`);
+  try {
+    const result: TestRunResult = await runTestsAndParseFailures(options);
+    if (result.buildErrors && result.buildErrors.length > 0) {
       // Instead of calling AI, request more context from the external system
       return {
         success: false,
-        error: 'test-failure',
-        testFailures: result.testFailures,
+        error: 'build-error',
+        buildErrors: result.buildErrors,
         aiSuggestions: [],
         needsContext: true,
-        message: 'Test failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
+        message: 'Build failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
       } as any;
-    } catch (err: any) {
-      const msg = String(err?.message || err);
-      if (/no such file|not found|does not exist|missing/i.test(msg)) {
-        return { success: false, error: 'missing-project' };
-      }
-      if (/build error|build failed|xcodebuild/i.test(msg)) {
-        lastBuildErrors.push(msg);
-        return { success: false, error: 'build-error', buildErrors: lastBuildErrors };
-      }
-      lastBuildErrors.push(msg);
-      return { success: false, error: msg, buildErrors: lastBuildErrors };
     }
-  }
-  console.log("[MCP] ❌ Tests are still failing after max retries.");
-  return { success: false, error: 'max-retries', testFailures: lastFailures };
-}
-
-async function autoCommitFixes(message: string) {
-  try {
-    await execAsync("git add .");
-    await execAsync(`git commit -m "${message}"`);
-    console.log("[MCP] ✅ Auto-committed changes.");
-  } catch (err) {
-    console.warn("[MCP] Could not commit changes:", err);
+    if (!result.testFailures || result.testFailures.length === 0) {
+      console.log("[MCP] ✅ All tests passed.");
+      return { success: true, data: "All tests passed." };
+    }
+    console.log(`[MCP] ❌ ${result.testFailures.length} test(s) failed.`);
+    // Instead of calling AI, request more context from the external system
+    return {
+      success: false,
+      error: 'test-failure',
+      testFailures: result.testFailures,
+      aiSuggestions: [],
+      needsContext: true,
+      message: 'Test failed. Please provide the code for the failing test and the class/function under test for better AI suggestions.'
+    } as any;
+  } catch (err: any) {
+    const msg = String(err?.message || err);
+    if (/no such file|not found|does not exist|missing/i.test(msg)) {
+      return { success: false, error: 'missing-project' };
+    }
+    if (/build error|build failed|xcodebuild/i.test(msg)) {
+      return { success: false, error: 'build-error', buildErrors: [msg] };
+    }
+    return { success: false, error: msg, buildErrors: [msg] };
   }
 }
 
@@ -84,9 +59,6 @@ export async function handleLintFix(path: string): Promise<TaskResult<string>> {
   try {
     const output = await runSwiftLintFix(path);
     console.log("[SwiftLint Output]:\n" + output);
-    try {
-      await autoCommitFixes("Fix: auto-applied SwiftLint corrections");
-    } catch {}
     return { success: true, data: output };
   } catch (err: any) {
     const msg = String(err?.message || err);
@@ -105,11 +77,6 @@ export enum TaskType {
   LintFix = "lint-fix"
 }
 
-export interface MCPTaskOptions {
-  xcodeproj?: string;
-  xcworkspace?: string;
-  scheme?: string;
-}
 
 export async function orchestrateTask(type: TaskType, options: any = {}): Promise<TaskResult<any>> {
   console.log(`🧠 [MCP] Starting task: ${type}`);
