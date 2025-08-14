@@ -1,9 +1,9 @@
 import { spawn } from "child_process";
 import fs from "fs-extra";
 
-export async function spawnAndCollectOutput(cmd: string, files?: { outFile: string, errFile: string }): Promise<{ stdout: string, stderr: string }> {
-  const outFile = files?.outFile || './xcodebuild.stdout.log';
-  const errFile = files?.errFile || './xcodebuild.stderr.log';
+export async function spawnAndCollectOutput(cmd: string, files: { outFile: string, errFile: string }): Promise<{ stdout: string, stderr: string }> {
+  const outFile = files.outFile;
+  const errFile = files.errFile;
   let outStream: fs.WriteStream | undefined;
   let errStream: fs.WriteStream | undefined;
   try {

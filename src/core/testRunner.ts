@@ -115,7 +115,7 @@ export interface TestRunResult {
 
 export async function runTestsAndParseFailures(
   options: TestFixOptions,
-  spawnAndCollectOutputImpl: (cmd: string, files?: { outFile: string, errFile: string }) => Promise<{ stdout: string, stderr: string }> = spawnAndCollectOutput
+  spawnAndCollectOutputImpl: (cmd: string, files: { outFile: string, errFile: string }) => Promise<{ stdout: string, stderr: string }> = spawnAndCollectOutput
 ): Promise<TestRunResult> {
   // Clean previous test artifacts
   // Generate a unique folder for this run
