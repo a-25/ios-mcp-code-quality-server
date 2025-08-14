@@ -1,3 +1,6 @@
+export interface ExecAsyncResult {
+  stdout: string;
+}
 async function cleanupRunDir(runDir: string): Promise<void> {
   try {
     await fs.rm(runDir, { recursive: true, force: true });
@@ -7,7 +10,7 @@ import { TestFixOptions } from "./taskOptions.js";
 import { exec } from "child_process";
 import util from "util";
 import fs from "fs-extra";
-import { spawnAndCollectOutput } from "../utils/spawnAndCollectOutput.js";
+import { spawnAndCollectOutput, SpawnOutputFiles, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
 
 export type TestFailure = {
   testIdentifier: string;
@@ -97,7 +100,7 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
 export async function getXcresultObject(
   xcresultPath: string,
   id?: string,
-  execAsyncImpl?: (cmd: string) => Promise<{ stdout: string }>
+  execAsyncImpl?: (cmd: string) => Promise<ExecAsyncResult>
 ): Promise<any> {
   // Use a local execAsync if not provided
   const execAsync = execAsyncImpl || util.promisify(exec);
@@ -115,7 +118,7 @@ export interface TestRunResult {
 
 export async function runTestsAndParseFailures(
   options: TestFixOptions,
-  spawnAndCollectOutputImpl: (cmd: string, files: { outFile: string, errFile: string }) => Promise<{ stdout: string, stderr: string }> = spawnAndCollectOutput
+  spawnAndCollectOutputImpl: (cmd: string, files: SpawnOutputFiles) => Promise<SpawnOutputResult> = spawnAndCollectOutput
 ): Promise<TestRunResult> {
   // Clean previous test artifacts
   // Generate a unique folder for this run
@@ -142,12 +145,7 @@ export async function runTestsAndParseFailures(
   let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
   let cleanupDone = false;
   try {
-    // Support both 1-arg and 2-arg signatures for spawnAndCollectOutputImpl
-    if (spawnAndCollectOutputImpl.length === 1) {
-      testCommandResult = await spawnAndCollectOutputImpl(cmd);
-    } else {
-      testCommandResult = await spawnAndCollectOutputImpl(cmd, { outFile, errFile });
-    }
+    testCommandResult = await spawnAndCollectOutputImpl(cmd, { outFile, errFile });
     // Detect build failure marker in output
     const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
     if (/The following build commands failed:/i.test(output)) {

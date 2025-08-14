@@ -43,7 +43,7 @@ describe('task handlers', () => {
   });
 
   it('handles TestFix with success', async () => {
-    (handleTestFixLoop as any).mockResolvedValue({ success: true, data: 'ok' });
+  (handleTestFixLoop as any).mockResolvedValue({ success: true, data: 'ok' } as import('../core/taskOrchestrator.js').TaskResult<string>);
     const result = await handleTestFixLoop(validTestFixOptions);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -64,7 +64,7 @@ describe('task handlers', () => {
   });
 
   it('handles LintFix with success', async () => {
-    (handleLintFix as any).mockResolvedValue({ success: true, data: 'lint-ok' });
+  (handleLintFix as any).mockResolvedValue({ success: true, data: 'lint-ok' } as import('../core/taskOrchestrator.js').TaskResult<string>);
     const result = await handleLintFix(validLintFixArg);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -85,7 +85,7 @@ describe('task handlers', () => {
   });
 
   it('returns error if TestFix returns failure', async () => {
-    (handleTestFixLoop as any).mockResolvedValue({ success: false, error: TestErrorType.UnknownError });
+  (handleTestFixLoop as any).mockResolvedValue({ success: false, error: TestErrorType.UnknownError } as import('../core/taskOrchestrator.js').TaskResult<string>);
     const result = await handleTestFixLoop(validTestFixOptions);
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -96,7 +96,7 @@ describe('task handlers', () => {
   });
 
   it('returns error if LintFix returns failure', async () => {
-    (handleLintFix as any).mockResolvedValue({ success: false, error: TestErrorType.UnknownError });
+  (handleLintFix as any).mockResolvedValue({ success: false, error: TestErrorType.UnknownError } as import('../core/taskOrchestrator.js').TaskResult<string>);
     const result = await handleLintFix(validLintFixArg);
     expect(result.success).toBe(false);
     if (!result.success) {

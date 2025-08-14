@@ -1,11 +1,17 @@
 import type { TaskResult } from "./taskOrchestrator.js";
 import type { TestFixOptions } from "./taskOptions.js";
 
-type MCPContent = { type: 'text'; text: string; _meta?: any; resource?: any; [key: string]: any };
+export interface MCPContent {
+  type: 'text';
+  text: string;
+  _meta?: any;
+  resource?: any;
+  [key: string]: any;
+}
 
 export function formatTestResultResponse(
   input: TestFixOptions,
-  validation: { valid: boolean; error?: string },
+  validation: import("./taskOptions.js").ValidationResult,
   result: TaskResult | undefined
 ): { content: MCPContent[]; _meta?: any } {
   if (!validation.valid) {

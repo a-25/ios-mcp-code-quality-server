@@ -1,7 +1,16 @@
+export interface SpawnOutputFiles {
+  outFile: string;
+  errFile: string;
+}
+
+export interface SpawnOutputResult {
+  stdout: string;
+  stderr: string;
+}
 import { spawn } from "child_process";
 import fs from "fs-extra";
 
-export async function spawnAndCollectOutput(cmd: string, files: { outFile: string, errFile: string }): Promise<{ stdout: string, stderr: string }> {
+export async function spawnAndCollectOutput(cmd: string, files: SpawnOutputFiles): Promise<SpawnOutputResult> {
   const outFile = files.outFile;
   const errFile = files.errFile;
   let outStream: fs.WriteStream | undefined;
