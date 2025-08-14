@@ -24,9 +24,9 @@ describe('MCP test tool main logic', () => {
     const buildFailureOutput = fs.readFileSync(path.join(__dirname, 'mockData', 'buildFailureOutput.txt'), 'utf8');
     const { runTestsAndParseFailures } = await import('../core/testRunner.js');
     // Use a mock function for spawnAndCollectOutputImpl
-    const mockSpawnAndCollectOutput = async () => ({ stdout: buildFailureOutput, stderr: '' });
-    const options = { scheme: 'TestScheme', xcodeproj: 'TestProj.xcodeproj', xcworkspace: 'TestWorkspace.xcworkspace', destination: 'platform=iOS Simulator,name=iPhone 16' };
-    const result = await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
+  const mockSpawnAndCollectOutput = async (cmd: string, files?: { outFile: string, errFile: string }) => ({ stdout: buildFailureOutput, stderr: '' });
+  const options = { scheme: 'TestScheme', xcodeproj: 'TestProj.xcodeproj', xcworkspace: 'TestWorkspace.xcworkspace', destination: 'platform=iOS Simulator,name=iPhone 16' };
+  const result = await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
     expect(result.buildErrors.length).toBeGreaterThan(0);
     expect(result.buildErrors[0]).toContain('The following build commands failed:');
     expect(result.testFailures).toEqual([]);

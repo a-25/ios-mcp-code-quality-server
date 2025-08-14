@@ -110,20 +110,24 @@ export interface TestRunResult {
 
 export async function runTestsAndParseFailures(
   options: TestFixOptions,
-  spawnAndCollectOutputImpl: (cmd: string) => Promise<{ stdout: string, stderr: string }> = spawnAndCollectOutput
+  spawnAndCollectOutputImpl: (cmd: string, files?: { outFile: string, errFile: string }) => Promise<{ stdout: string, stderr: string }> = spawnAndCollectOutput
 ): Promise<TestRunResult> {
   // Clean previous test artifacts
-  const xcresultPath = "./test.xcresult";
-  if (await fs.pathExists(xcresultPath)) {
-    await fs.remove(xcresultPath);
-    console.log(`[MCP] Removed previous xcresult at ${xcresultPath}`);
-  }
+  // Generate a unique folder for this run
+  const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const runDir = `./.mcp-artifacts/${runId}`;
+  await fs.ensureDir(runDir);
+  const xcresultPath = `${runDir}/test.xcresult`;
+  const outFile = `${runDir}/xcodebuild.stdout.log`;
+  const errFile = `${runDir}/xcodebuild.stderr.log`;
+  // Clean previous artifacts in this folder (should be empty, but for safety)
+  await fs.emptyDir(runDir);
   // Build xcodebuild command
   const workspaceArg = options.xcworkspace ? `-workspace \"${options.xcworkspace}\"` : "";
   const projectArg = options.xcodeproj ? `-project \"${options.xcodeproj}\"` : "";
   const schemeArg = options.scheme ? `-scheme \"${options.scheme}\"` : "";
   const destinationArg = `-destination \"${options.destination || 'generic/platform=iOS Simulator'}\"`;
-  const resultBundleArg = "-resultBundlePath ./test.xcresult";
+  const resultBundleArg = `-resultBundlePath ${xcresultPath}`;
   const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} ${resultBundleArg}`.replace(/\s+/g, ' ').trim();
 
   console.log(`[MCP] Running tests with: ${cmd}`);
@@ -132,7 +136,12 @@ export async function runTestsAndParseFailures(
   let testFailures: TestFailure[] = [];
   let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
   try {
-    testCommandResult = await spawnAndCollectOutputImpl(cmd);
+    // Support both 1-arg and 2-arg signatures for spawnAndCollectOutputImpl
+    if (spawnAndCollectOutputImpl.length === 1) {
+      testCommandResult = await spawnAndCollectOutputImpl(cmd);
+    } else {
+      testCommandResult = await spawnAndCollectOutputImpl(cmd, { outFile, errFile });
+    }
     // Detect build failure marker in output
     const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
     if (/The following build commands failed:/i.test(output)) {
@@ -149,5 +158,7 @@ export async function runTestsAndParseFailures(
   if (await fs.pathExists(xcresultPath)) {
     testFailures = await parseXcresultForFailures(xcresultPath);
   }
+  // Clean up the runDir after usage
+  try { await fs.remove(runDir); } catch {}
   return { buildErrors, testFailures };
 }
