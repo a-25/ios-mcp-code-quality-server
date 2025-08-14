@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { spawnAndCollectOutput } from '../utils/spawnAndCollectOutput.js';
-import fs from 'fs-extra';
 
 // Mock command for testing
 const echoCmd = 'echo "Hello, World!"';
