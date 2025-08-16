@@ -3,6 +3,10 @@ export interface SpawnOutputResult {
   stderr: string;
 }
 import { execa } from "execa";
+export interface SpawnOutputResult {
+  stdout: string;
+  stderr: string;
+}
 
 export async function spawnAndCollectOutput(cmd: string): Promise<SpawnOutputResult> {
   try {
