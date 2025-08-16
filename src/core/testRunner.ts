@@ -107,7 +107,7 @@ export async function getXcresultObject(
   const execAsync = execAsyncImpl || util.promisify(exec);
   // Only include --id if id is provided and not undefined/null/empty
   const idArg = id ? `--id ${id}` : "";
-  const cmd = `xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} ${idArg}`.replace(/\s+/g, ' ').trim();
+  const cmd = `xcrun xcresulttool get object --legacy --format json --path ${xcresultPath} ${idArg}`.replace(/\s+/g, " ").trim();
   const { stdout } = await execAsync(cmd);
   return JSON.parse(stdout);
 }
@@ -135,18 +135,18 @@ export async function runTestsAndParseFailures(
   const workspaceArg = options.xcworkspace ? `-workspace \"${options.xcworkspace}\"` : "";
   const projectArg = options.xcodeproj ? `-project \"${options.xcodeproj}\"` : "";
   const schemeArg = options.scheme ? `-scheme \"${options.scheme}\"` : "";
-  const destinationArg = `-destination \"${options.destination || 'generic/platform=iOS Simulator'}\"`;
+  const destinationArg = `-destination \"${options.destination || "generic/platform=iOS Simulator"}\"`;
   const resultBundleArg = `-resultBundlePath ${xcresultPath}`;
-  const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} ${resultBundleArg}`.replace(/\s+/g, ' ').trim();
+  const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} ${resultBundleArg}`.replace(/\s+/g, " ").trim();
 
   console.log(`[MCP] Running tests with: ${cmd}`);
 
   let buildErrors: string[] = [];
   let testFailures: TestFailure[] = [];
-  let testCommandResult: { stdout: string, stderr: string } = { stdout: '', stderr: '' };
+  let testCommandResult: { stdout: string, stderr: string } = { stdout: "", stderr: "" };
   let cleanupDone = false;
   try {
-  testCommandResult = await spawnAndCollectOutputImpl(cmd);
+    testCommandResult = await spawnAndCollectOutputImpl(cmd);
     // Detect build failure marker in output
     const output = `${testCommandResult.stdout}\n${testCommandResult.stderr}`;
     if (/The following build commands failed:/i.test(output)) {
@@ -156,7 +156,7 @@ export async function runTestsAndParseFailures(
       return { buildErrors, testFailures: [] };
     }
   } catch (err: any) {
-    testCommandResult = { stdout: '', stderr: err?.message || '' };
+    testCommandResult = { stdout: "", stderr: err?.message || "" };
     buildErrors = [testCommandResult.stdout, testCommandResult.stderr];
     await cleanupRunDir(runDir);
     cleanupDone = true;

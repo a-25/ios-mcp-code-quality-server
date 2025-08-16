@@ -1,0 +1,48 @@
+{
+  "env": {
+    "es2022": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "no-console": "off",
+    "prefer-const": "error",
+    "no-var": "error",
+    "object-shorthand": "error",
+    "prefer-arrow-callback": "error",
+    "prefer-template": "error",
+    "template-curly-spacing": "error",
+    "arrow-spacing": "error",
+    "comma-dangle": ["error", "never"],
+    "quotes": ["error", "double"],
+    "semi": ["error", "always"],
+    "indent": ["error", 2],
+    "no-trailing-spaces": "error",
+    "eol-last": "error",
+    "no-unused-vars": "off"
+  },
+  "ignorePatterns": [
+    "dist/",
+    "node_modules/",
+    "*.js",
+    "jest.config.*"
+  ]
+}
