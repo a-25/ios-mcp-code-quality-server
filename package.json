@@ -6,6 +6,8 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "tsc -p tsconfig.build.json --noEmit false && node dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "start:prod": "node dist/index.js",
     "lint": "eslint . --ext .ts",
     "test": "vitest run"
   },
@@ -20,11 +22,11 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-  "@types/fs-extra": "^11.0.4",
-  "@types/node": "^20.11.30",
-  "@vitest/ui": "^3.2.4",
-  "eslint": "^8.56.0",
-  "typescript": "^5.4.5",
-  "vitest": "^3.2.4"
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.30",
+    "@vitest/ui": "^3.2.4",
+    "eslint": "^8.56.0",
+    "typescript": "^5.4.5",
+    "vitest": "^3.2.4"
   }
 }
