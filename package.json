@@ -26,7 +26,9 @@
     "@vitest/ui": "^3.2.4",
     "eslint": "^8.56.0",
     "jest": "^30.0.5",
-    "ts-jest": "^29.4.0",
+    "@types/node": "^20.11.30",
+    "@vitest/ui": "^3.2.4",
+    "eslint": "^8.56.0",
     "typescript": "^5.4.5",
     "vitest": "^3.2.4"
   }
