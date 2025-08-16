@@ -1,6 +1,6 @@
 # iOS MCP Code Quality Server
 
-A Model Context Protocol (MCP) server that provides comprehensive iOS code quality analysis and test automation capabilities. This server enables AI assistants to run Xcode tests, perform SwiftLint analysis, and provide detailed feedback on iOS projects through structured, actionable reports.
+A Model Context Protocol (MCP) server that provides comprehensive iOS code quality analysis and test automation capabilities. This server enables AI assistants to run Xcode tests, perform linter analysis, and provide detailed feedback on iOS projects through structured, actionable reports.
 
 ![License](https://img.shields.io/github/license/a-25/ios-mcp-code-quality-server)
 ![Tests](https://img.shields.io/github/actions/workflow/status/a-25/ios-mcp-code-quality-server/test.yml)
@@ -105,7 +105,7 @@ Executes iOS tests and provides detailed failure analysis.
 - **Note**: Either `xcodeproj` or `xcworkspace` parameter is mandatory (at least one must be provided)
 - `scheme` (required): Xcode scheme to test
 - `destination` (optional): Test destination (simulator/device)
-  - Default value: `platform=iOS Simulator,name=iPhone 15`
+  - Default value: `generic/platform=iOS Simulator`
 
 **Example Response:**
 ```json
@@ -233,9 +233,6 @@ npm test
 
 # Run with coverage
 npm run test:coverage
-
-# Watch mode for development
-npm run test:watch
 ```
 
 ### Code Quality
@@ -254,11 +251,7 @@ npm run type-check
 ### Building
 
 ```bash
-# Development build
 npm run build
-
-# Production build
-npm run build:prod
 ```
 
 ## Contributing
