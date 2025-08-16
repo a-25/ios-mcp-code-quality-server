@@ -101,9 +101,11 @@ Executes iOS tests and provides detailed failure analysis.
 
 **Parameters:**
 - `xcodeproj` (optional): Path to Xcode project file
-- `xcworkspace` (optional): Path to Xcode workspace file  
+- `xcworkspace` (optional): Path to Xcode workspace file
+- **Note**: Either `xcodeproj` or `xcworkspace` parameter is mandatory (at least one must be provided)
 - `scheme` (required): Xcode scheme to test
 - `destination` (optional): Test destination (simulator/device)
+  - Default value: `platform=iOS Simulator,name=iPhone 15`
 
 **Example Response:**
 ```json
@@ -111,30 +113,19 @@ Executes iOS tests and provides detailed failure analysis.
   "content": [
     {
       "type": "text", 
-      "text": "✅ Tests completed successfully\n📊 Results: 15 passed, 2 failed\n\n❌ Failed Tests:\n- LoginViewModelTests.testInvalidCredentials (line 45)\n- NetworkManagerTests.testTimeout (line 78)"
+      "text": "✅ Tests completed successfully\n📊 Results: 15 passed, 0 failed"
     }
   ]
 }
 ```
+
+Possible result states:
+- **build errors**: When tests fail to build due to compilation issues
+- **tests errors**: When tests build successfully but some tests fail during execution  
+- **success**: When all tests pass successfully
 
 ### Lint Tool
-Performs SwiftLint analysis on your iOS project.
-
-**Parameters:**
-- `xcodeproj` (optional): Path to Xcode project file
-- `xcworkspace` (optional): Path to Xcode workspace file
-
-**Example Response:**
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "🔍 SwiftLint Analysis Complete\n\n⚠️ 3 warnings found:\n- Line too long (ViewController.swift:42)\n- Missing documentation (APIClient.swift:15)\n- Unused variable (Helper.swift:8)"
-    }
-  ]
-}
-```
+Performs lint analysis on your iOS project. Currently supported linters: [SwiftLint](https://github.com/realm/SwiftLint)
 
 ## API Endpoints
 
@@ -154,6 +145,7 @@ Main MCP endpoint for tool execution requests.
   "params": {
     "name": "test",
     "arguments": {
+      "xcodeproj": "MyApp.xcodeproj",
       "scheme": "MyApp",
       "destination": "platform=iOS Simulator,name=iPhone 15"
     }
@@ -161,17 +153,6 @@ Main MCP endpoint for tool execution requests.
 }
 ```
 
-### GET /status
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "healthy",
-  "uptime": 1234567,
-  "version": "0.1.0"
-}
-```
 
 ## Usage Examples
 
@@ -192,12 +173,6 @@ The AI assistant will use the test tool to:
 ```
 "Please analyze the code quality of my iOS project using SwiftLint"
 ```
-
-The AI assistant will:
-1. Run SwiftLint analysis
-2. Categorize issues by severity
-3. Provide specific file locations and suggestions
-4. Help prioritize fixes
 
 ## Architecture
 
@@ -235,7 +210,7 @@ The server acts as a bridge between AI assistants and iOS development tools, pro
 - Verify installation: `swiftlint version`
 
 **MCP Connection Issues:**
-- Verify the server is running: `curl http://localhost:3000/status`
+- Verify the server is running: check that the process is active on port 3000 with `lsof -i :3000`
 - Check AI assistant MCP configuration
 - Review server logs for connection errors
 
