@@ -107,22 +107,43 @@ Executes iOS tests and provides detailed failure analysis.
 - `destination` (optional): Test destination (simulator/device)
   - Default value: `generic/platform=iOS Simulator`
 
-**Example Response:**
+**Example Responses:**
+
+**Success Case (all tests passed):**
 ```json
 {
   "content": [
     {
       "type": "text", 
-      "text": "✅ Tests completed successfully\n📊 Results: 15 passed, 0 failed"
+      "text": "✅ All tests passed."
     }
   ]
 }
 ```
 
-Possible result states:
-- **build errors**: When tests fail to build due to compilation issues
-- **tests errors**: When tests build successfully but some tests fail during execution  
-- **success**: When all tests pass successfully
+**Build Errors Case (compilation issues):**
+```json
+{
+  "content": [
+    {
+      "type": "text", 
+      "text": "❌ Build failed. Please provide the code for the failing test and the class/function under test for better AI suggestions."
+    }
+  ]
+}
+```
+
+**Test Errors Case (tests built but failed):**
+```json
+{
+  "content": [
+    {
+      "type": "text", 
+      "text": "❌ Test failed. Please provide the code for the failing test and the class/function under test for better AI suggestions."
+    }
+  ]
+}
+```
 
 ### Lint Tool
 Performs lint analysis on your iOS project. Currently supported linters: [SwiftLint](https://github.com/realm/SwiftLint)
