@@ -1,0 +1,868 @@
+{
+  "_type" : {
+    "_name" : "ActionsInvocationRecord"
+  },
+  "actions" : {
+    "_type" : {
+      "_name" : "Array"
+    },
+    "_values" : [
+      {
+        "_type" : {
+          "_name" : "ActionRecord"
+        },
+        "actionResult" : {
+          "_type" : {
+            "_name" : "ActionResult"
+          },
+          "coverage" : {
+            "_type" : {
+              "_name" : "CodeCoverageInfo"
+            },
+            "archiveRef" : {
+              "_type" : {
+                "_name" : "Reference"
+              },
+              "id" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "0~12pZGNXmx64Av6gl-qkfnXGBFA8AoYaSKbPHBxze_u4XtJ9gQvnerkzPHTMb63jLUiUSl8mHCz-QnWjd3-UOLw=="
+              }
+            },
+            "hasCoverageData" : {
+              "_type" : {
+                "_name" : "Bool"
+              },
+              "_value" : "true"
+            },
+            "reportRef" : {
+              "_type" : {
+                "_name" : "Reference"
+              },
+              "id" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "0~t5PX2G0FlGj1Q4t_NJDggORsT92bWKdJ46UMmNCxUDgF8m5jEgVIRtqmeNbbXUUgRf9UrPLMnRSyQJFgI-yxwA=="
+              }
+            }
+          },
+          "diagnosticsRef" : {
+            "_type" : {
+              "_name" : "Reference"
+            },
+            "id" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "0~TBwZ8UeA3QTeewPUzgIIPjrubeauSzrSR_fKZLQTA0UFZUtG4CjrQedNxtT56OtoS46dicg5SygVEv-gHLRzGg=="
+            }
+          },
+          "issues" : {
+            "_type" : {
+              "_name" : "ResultIssueSummaries"
+            },
+            "testFailureSummaries" : {
+              "_type" : {
+                "_name" : "Array"
+              },
+              "_values" : [
+                {
+                  "_type" : {
+                    "_name" : "TestFailureIssueSummary",
+                    "_supertype" : {
+                      "_name" : "IssueSummary"
+                    }
+                  },
+                  "documentLocationInCreatingWorkspace" : {
+                    "_type" : {
+                      "_name" : "DocumentLocation"
+                    },
+                    "concreteTypeName" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "DVTTextDocumentLocation"
+                    },
+                    "url" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "file:\/\/\/Users\/user\/Projects\/TestProject\/TestProjectUnitTests\/TestProjectUnitTests.swift#EndingLineNumber=22&StartingLineNumber=22"
+                    }
+                  },
+                  "issueType" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "Uncategorized"
+                  },
+                  "message" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "XCTAssertEqual failed: (\"name, familty\") is not equal to (\"test\")"
+                  },
+                  "testCaseName" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "TestProjectUnitTests.testDescription()"
+                  }
+                },
+                {
+                  "_type" : {
+                    "_name" : "TestFailureIssueSummary",
+                    "_supertype" : {
+                      "_name" : "IssueSummary"
+                    }
+                  },
+                  "documentLocationInCreatingWorkspace" : {
+                    "_type" : {
+                      "_name" : "DocumentLocation"
+                    },
+                    "concreteTypeName" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "DVTTextDocumentLocation"
+                    },
+                    "url" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "file:\/\/\/Users\/user\/Projects\/TestProject\/TestProjectUnitTests\/TestProjectUnitTests.swift#EndingLineNumber=27&StartingLineNumber=27"
+                    }
+                  },
+                  "issueType" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "Uncategorized"
+                  },
+                  "message" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "XCTAssertEqual failed: (\"Test: name, familty\") is not equal to (\"test\")"
+                  },
+                  "testCaseName" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "TestProjectUnitTests.testTestDescription()"
+                  }
+                }
+              ]
+            }
+          },
+          "logRef" : {
+            "_type" : {
+              "_name" : "Reference"
+            },
+            "id" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "0~cRp7Ub6RcbXQohp7NOs_WXNb4wViLzzHCjjcvWOzoHiNHywUqJsGVBBdArYXXT9iO45BTqoQFO8AyTOU3q3sSw=="
+            },
+            "targetType" : {
+              "_type" : {
+                "_name" : "TypeDefinition"
+              },
+              "name" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "ActivityLogSection"
+              }
+            }
+          },
+          "metrics" : {
+            "_type" : {
+              "_name" : "ResultMetrics"
+            },
+            "testsCount" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "2"
+            },
+            "testsFailedCount" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "2"
+            }
+          },
+          "resultName" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "action"
+          },
+          "status" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "failed"
+          },
+          "testsRef" : {
+            "_type" : {
+              "_name" : "Reference"
+            },
+            "id" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "0~cVY1yoxvqHDJgVC9HWRRTKE67YQi2F44thiv6goV5M_JTbXUuGOydlIspFhpaQeR_Xr4_7V3HNE8hOcoeshw4g=="
+            },
+            "targetType" : {
+              "_type" : {
+                "_name" : "TypeDefinition"
+              },
+              "name" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "ActionTestPlanRunSummaries"
+              }
+            }
+          }
+        },
+        "buildResult" : {
+          "_type" : {
+            "_name" : "ActionResult"
+          },
+          "coverage" : {
+            "_type" : {
+              "_name" : "CodeCoverageInfo"
+            }
+          },
+          "issues" : {
+            "_type" : {
+              "_name" : "ResultIssueSummaries"
+            },
+            "warningSummaries" : {
+              "_type" : {
+                "_name" : "Array"
+              },
+              "_values" : [
+                {
+                  "_type" : {
+                    "_name" : "IssueSummary"
+                  },
+                  "documentLocationInCreatingWorkspace" : {
+                    "_type" : {
+                      "_name" : "DocumentLocation"
+                    },
+                    "concreteTypeName" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Xcode3ProjectDocumentLocation"
+                    },
+                    "url" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "file:\/\/\/Users\/user\/Library\/Developer\/Xcode\/DerivedData\/TestProject-fqqprowksqfoxnctjvrrrhilwtyg\/SourcePackages\/checkouts\/firebase-ios-sdk\/Package.swift#Timestamp=775746942.8574409&XcodeLocation=%7B%22Selection%22:%7B%22Editor%22:%22Xcode3BuildSettingsEditor%22,%22Target%22:%22Firebase%22,%22Xcode3BuildSettingsEditorLocations%22:%5B%7B%22Selected%20Build%20Properties%22:%5B%22DEFINES_MODULE%22%5D%7D%5D%7D%7D"
+                    }
+                  },
+                  "issueType" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "Target Integrity"
+                  },
+                  "message" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "DEFINES_MODULE was set, but no umbrella header could be found to generate the module map"
+                  }
+                },
+                {
+                  "_type" : {
+                    "_name" : "IssueSummary"
+                  },
+                  "issueType" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "Warning"
+                  },
+                  "message" : {
+                    "_type" : {
+                      "_name" : "String"
+                    },
+                    "_value" : "no rule to process file '\/Users\/user\/Projects\/TestProject\/TestProject\/Experience.rcproject' of type 'folder' for architecture 'arm64'"
+                  }
+                }
+              ]
+            }
+          },
+          "logRef" : {
+            "_type" : {
+              "_name" : "Reference"
+            },
+            "id" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "0~5YAuEtwJ0wkEhEtRpsz3UBPw9CnvN_qgTpp_im07WnihJPX5YQUp-vjLKrR9mSqlV-pz1kMSFk_9-Bt2EIgqCg=="
+            },
+            "targetType" : {
+              "_type" : {
+                "_name" : "TypeDefinition"
+              },
+              "name" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "ActivityLogSection"
+              }
+            }
+          },
+          "metrics" : {
+            "_type" : {
+              "_name" : "ResultMetrics"
+            },
+            "warningCount" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "2"
+            }
+          },
+          "resultName" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "build"
+          },
+          "status" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "succeeded"
+          }
+        },
+        "endedTime" : {
+          "_type" : {
+            "_name" : "Date"
+          },
+          "_value" : "2025-08-01T15:16:22.904+0200"
+        },
+        "runDestination" : {
+          "_type" : {
+            "_name" : "ActionRunDestinationRecord"
+          },
+          "displayName" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "iPhone 16"
+          },
+          "localComputerRecord" : {
+            "_type" : {
+              "_name" : "ActionDeviceRecord"
+            },
+            "busSpeedInMHz" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "0"
+            },
+            "cpuCount" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "1"
+            },
+            "cpuKind" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "Apple M4"
+            },
+            "cpuSpeedInMHz" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "0"
+            },
+            "identifier" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "00008132-001E11D221F0801C"
+            },
+            "isConcreteDevice" : {
+              "_type" : {
+                "_name" : "Bool"
+              },
+              "_value" : "true"
+            },
+            "logicalCPUCoresPerPackage" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "10"
+            },
+            "modelCode" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "Mac16,10"
+            },
+            "modelName" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "Mac mini"
+            },
+            "modelUTI" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "com.apple.macmini-2024"
+            },
+            "name" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "My Mac"
+            },
+            "nativeArchitecture" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "arm64e"
+            },
+            "operatingSystemVersion" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "15.4.1"
+            },
+            "operatingSystemVersionWithBuildNumber" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "15.4.1 (24E263)"
+            },
+            "physicalCPUCoresPerPackage" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "10"
+            },
+            "platformRecord" : {
+              "_type" : {
+                "_name" : "ActionPlatformRecord"
+              },
+              "identifier" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "com.apple.platform.macosx"
+              },
+              "userDescription" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "macOS"
+              }
+            },
+            "ramSizeInMegabytes" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "16384"
+            }
+          },
+          "targetArchitecture" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "arm64"
+          },
+          "targetDeviceRecord" : {
+            "_type" : {
+              "_name" : "ActionDeviceRecord"
+            },
+            "busSpeedInMHz" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "0"
+            },
+            "cpuCount" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "0"
+            },
+            "cpuSpeedInMHz" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "0"
+            },
+            "identifier" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "930234F2-F842-4147-B171-F44DB78800FC"
+            },
+            "isConcreteDevice" : {
+              "_type" : {
+                "_name" : "Bool"
+              },
+              "_value" : "true"
+            },
+            "logicalCPUCoresPerPackage" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "0"
+            },
+            "modelCode" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "iPhone17,3"
+            },
+            "modelName" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "iPhone 16"
+            },
+            "modelUTI" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "com.apple.iphone-16-1"
+            },
+            "name" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "iPhone 16"
+            },
+            "nativeArchitecture" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "arm64"
+            },
+            "operatingSystemVersion" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "18.3.1"
+            },
+            "operatingSystemVersionWithBuildNumber" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "18.3.1 (22D8075)"
+            },
+            "physicalCPUCoresPerPackage" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "0"
+            },
+            "platformRecord" : {
+              "_type" : {
+                "_name" : "ActionPlatformRecord"
+              },
+              "identifier" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "com.apple.platform.iphonesimulator"
+              },
+              "userDescription" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "iOS Simulator"
+              }
+            },
+            "ramSizeInMegabytes" : {
+              "_type" : {
+                "_name" : "Int"
+              },
+              "_value" : "0"
+            }
+          },
+          "targetSDKRecord" : {
+            "_type" : {
+              "_name" : "ActionSDKRecord"
+            },
+            "identifier" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "iphonesimulator18.2"
+            },
+            "name" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "Simulator - iOS 18.2"
+            },
+            "operatingSystemVersion" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "18.2"
+            }
+          }
+        },
+        "schemeCommandName" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "Test"
+        },
+        "schemeTaskName" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "BuildAndAction"
+        },
+        "startedTime" : {
+          "_type" : {
+            "_name" : "Date"
+          },
+          "_value" : "2025-08-01T15:15:42.794+0200"
+        },
+        "testPlanName" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "TestProject"
+        },
+        "title" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "Testing project TestProject with scheme TestProject"
+        }
+      }
+    ]
+  },
+  "issues" : {
+    "_type" : {
+      "_name" : "ResultIssueSummaries"
+    },
+    "testFailureSummaries" : {
+      "_type" : {
+        "_name" : "Array"
+      },
+      "_values" : [
+        {
+          "_type" : {
+            "_name" : "TestFailureIssueSummary",
+            "_supertype" : {
+              "_name" : "IssueSummary"
+            }
+          },
+          "documentLocationInCreatingWorkspace" : {
+            "_type" : {
+              "_name" : "DocumentLocation"
+            },
+            "concreteTypeName" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "DVTTextDocumentLocation"
+            },
+            "url" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "file:\/\/\/Users\/user\/Projects\/TestProject\/TestProjectUnitTests\/TestProjectUnitTests.swift#EndingLineNumber=22&StartingLineNumber=22"
+            }
+          },
+          "issueType" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "Uncategorized"
+          },
+          "message" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "XCTAssertEqual failed: (\"name, familty\") is not equal to (\"test\")"
+          },
+          "testCaseName" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "TestProjectUnitTests.testDescription()"
+          }
+        },
+        {
+          "_type" : {
+            "_name" : "TestFailureIssueSummary",
+            "_supertype" : {
+              "_name" : "IssueSummary"
+            }
+          },
+          "documentLocationInCreatingWorkspace" : {
+            "_type" : {
+              "_name" : "DocumentLocation"
+            },
+            "concreteTypeName" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "DVTTextDocumentLocation"
+            },
+            "url" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "file:\/\/\/Users\/user\/Projects\/TestProject\/TestProjectUnitTests\/TestProjectUnitTests.swift#EndingLineNumber=27&StartingLineNumber=27"
+            }
+          },
+          "issueType" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "Uncategorized"
+          },
+          "message" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "XCTAssertEqual failed: (\"Test: name, familty\") is not equal to (\"test\")"
+          },
+          "testCaseName" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "TestProjectUnitTests.testTestDescription()"
+          }
+        }
+      ]
+    },
+    "warningSummaries" : {
+      "_type" : {
+        "_name" : "Array"
+      },
+      "_values" : [
+        {
+          "_type" : {
+            "_name" : "IssueSummary"
+          },
+          "documentLocationInCreatingWorkspace" : {
+            "_type" : {
+              "_name" : "DocumentLocation"
+            },
+            "concreteTypeName" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "Xcode3ProjectDocumentLocation"
+            },
+            "url" : {
+              "_type" : {
+                "_name" : "String"
+              },
+              "_value" : "file:\/\/\/Users\/user\/Library\/Developer\/Xcode\/DerivedData\/TestProject-fqqprowksqfoxnctjvrrrhilwtyg\/SourcePackages\/checkouts\/firebase-ios-sdk\/Package.swift#Timestamp=775746942.8574409&XcodeLocation=%7B%22Selection%22:%7B%22Editor%22:%22Xcode3BuildSettingsEditor%22,%22Target%22:%22Firebase%22,%22Xcode3BuildSettingsEditorLocations%22:%5B%7B%22Selected%20Build%20Properties%22:%5B%22DEFINES_MODULE%22%5D%7D%5D%7D%7D"
+            }
+          },
+          "issueType" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "Target Integrity"
+          },
+          "message" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "DEFINES_MODULE was set, but no umbrella header could be found to generate the module map"
+          }
+        },
+        {
+          "_type" : {
+            "_name" : "IssueSummary"
+          },
+          "issueType" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "Warning"
+          },
+          "message" : {
+            "_type" : {
+              "_name" : "String"
+            },
+            "_value" : "no rule to process file '\/Users\/user\/Projects\/TestProject\/TestProject\/Experience.rcproject' of type 'folder' for architecture 'arm64'"
+          }
+        }
+      ]
+    }
+  },
+  "metadataRef" : {
+    "_type" : {
+      "_name" : "Reference"
+    },
+    "id" : {
+      "_type" : {
+        "_name" : "String"
+      },
+      "_value" : "0~RHZ5xab9Vne24a5XLpvjchSDsAEKokvwQXFSfUzXGVKl2XgZBwrHMnWw_cPzNBb9AGdzuGhdh0QoAKVzbQCqOg=="
+    },
+    "targetType" : {
+      "_type" : {
+        "_name" : "TypeDefinition"
+      },
+      "name" : {
+        "_type" : {
+          "_name" : "String"
+        },
+        "_value" : "ActionsInvocationMetadata"
+      }
+    }
+  },
+  "metrics" : {
+    "_type" : {
+      "_name" : "ResultMetrics"
+    },
+    "testsCount" : {
+      "_type" : {
+        "_name" : "Int"
+      },
+      "_value" : "2"
+    },
+    "testsFailedCount" : {
+      "_type" : {
+        "_name" : "Int"
+      },
+      "_value" : "2"
+    },
+    "totalCoveragePercentage" : {
+      "_type" : {
+        "_name" : "Double"
+      },
+      "_value" : "0.20976764199655765"
+    },
+    "warningCount" : {
+      "_type" : {
+        "_name" : "Int"
+      },
+      "_value" : "2"
+    }
+  }
+}
