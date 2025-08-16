@@ -5,10 +5,10 @@ export type TaskResult<T> =
   | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
 import PQueue from "p-queue";
 import { runTestsAndParseFailures } from "./testRunner.js";
-import { runSwiftLintFix } from "./swiftLint.js";
+import { runSwiftLintFix, checkSwiftLintInstallation, runSwiftLintWithConfig, runSwiftLintOnCodeChanges, type SwiftLintResult } from "./swiftLint.js";
 import { exec } from "child_process";
 import util from "util";
-import { TestFixOptions } from "./taskOptions.js";
+import { TestFixOptions, LintFixOptions } from "./taskOptions.js";
 
 const execAsync = util.promisify(exec);
 const queue = new PQueue({ concurrency: 2 });
@@ -54,12 +54,53 @@ export async function handleTestFixLoop(options: TestFixOptions): Promise<TaskRe
   }
 }
 
-export async function handleLintFix(path: string): Promise<TaskResult<string>> {
-  console.log(`[MCP] Running SwiftLint fix on: ${path}`);
+export async function handleLintFix(options: LintFixOptions): Promise<TaskResult<SwiftLintResult>> {
+  console.log(`[MCP] Running SwiftLint with options:`, options);
+  
+  // First check if SwiftLint is installed
+  const installationCheck = await checkSwiftLintInstallation();
+  if (!installationCheck.installed) {
+    console.log("[MCP] SwiftLint is not installed");
+    return { 
+      success: false, 
+      error: 'swiftlint-not-installed',
+      message: installationCheck.error || "SwiftLint is not installed"
+    };
+  }
+  
+  console.log(`[MCP] SwiftLint version: ${installationCheck.version}`);
+  
   try {
-    const output = await runSwiftLintFix(path);
-    console.log("[SwiftLint Output]:\n" + output);
-    return { success: true, data: output };
+    let result: SwiftLintResult;
+    
+    // If we have code changes, lint them directly
+    if (options.codeChanges) {
+      console.log("[MCP] Linting code changes");
+      result = await runSwiftLintOnCodeChanges(options.codeChanges, options.configPaths);
+    } else {
+      // Otherwise, lint the project directory
+      const targetPath = options.xcworkspace 
+        ? options.xcworkspace.replace(/\.xcworkspace$/, '') // Remove extension for directory
+        : options.xcodeproj 
+          ? options.xcodeproj.replace(/\.xcodeproj$/, '') // Remove extension for directory
+          : "./Sources"; // Default fallback
+      
+      console.log(`[MCP] Linting project at: ${targetPath}`);
+      result = await runSwiftLintWithConfig(targetPath, options.configPaths);
+    }
+    
+    if (!result.success) {
+      return { 
+        success: false, 
+        error: 'swiftlint-execution-failed',
+        message: result.error || "SwiftLint execution failed"
+      };
+    }
+    
+    console.log(`[MCP] SwiftLint found ${result.warnings.length} warnings`);
+    console.log("[SwiftLint Output]:\n" + result.output);
+    
+    return { success: true, data: result };
   } catch (err: any) {
     const msg = String(err?.message || err);
     if (/no such file|not found|does not exist|missing/i.test(msg)) {
@@ -89,9 +130,9 @@ export async function orchestrateTask(type: TaskType, options: any = {}): Promis
       return { success: false, error: String(err?.message || err || 'unknown-error') };
     }
   }
-  async function runLintFix(): Promise<TaskResult<string>> {
+  async function runLintFix(): Promise<TaskResult<SwiftLintResult>> {
     try {
-      return await handleLintFix("./Sources");
+      return await handleLintFix(options as LintFixOptions);
     } catch (err: any) {
       return { success: false, error: String(err?.message || err || 'unknown-error') };
     }
