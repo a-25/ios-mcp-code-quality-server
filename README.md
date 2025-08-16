@@ -1,73 +1,98 @@
-# ios-mcp-code-quality-server
+# iOS MCP Code Quality Server
 
-A high-quality Model Context Protocol (MCP) server for iOS code quality analysis, implementing MCP best practices for security, performance, and reliability.
+A Model Context Protocol (MCP) server that provides comprehensive iOS code quality analysis and test automation capabilities. This server enables AI assistants to run Xcode tests, perform linter analysis, and provide detailed feedback on iOS projects through structured, actionable reports.
 
-## Overview
-
-This MCP server provides comprehensive iOS code quality tools including:
-- **Test execution** with detailed failure reporting and AI-driven suggestions
-- **SwiftLint integration** for code style and quality analysis
-- **Comprehensive error handling** with proper MCP error codes
-- **Security features** including rate limiting and input validation
-- **Health monitoring** with detailed system checks
-- **Structured logging** for debugging and monitoring
-
-## MCP Best Practices Implementation
-
-### ✅ Security Features
-- **Rate limiting** to prevent abuse (configurable)
-- **Input validation** using Zod schemas
-- **Security headers** (CSP, X-Frame-Options, etc.)
-- **DNS rebinding protection** with configurable allowed hosts
-- **Structured error handling** with proper MCP error codes
-- **Session management** with automatic cleanup
-
-### ✅ Protocol Compliance
-- Full MCP protocol support using official SDK
-- Proper JSON-RPC 2.0 error responses
-- Session-based connection management
-- Graceful connection handling and cleanup
-
-### ✅ Tools Implementation
-- **test** - Execute iOS tests with comprehensive reporting
-- **lint** - Run SwiftLint with detailed analysis
-- Enhanced error handling with timeout support
-- Input validation and sanitization
-
-### ✅ Advanced Features
-- **Health checks** - `/health` endpoint with system status
-- **Structured logging** - Configurable log levels and formats
-- **Environment-based configuration** - Flexible deployment options
-- **Graceful shutdown** - Proper cleanup on termination
-- **Progress reporting** - Detailed task execution tracking
-
-### 🚧 Future Enhancements (Planned)
-- **Resources** - Access to project files and reports
-- **Prompts** - Pre-built prompts for code review and analysis
-- **Sampling** - AI model integration for advanced features
-- **Caching** - Performance optimization for repeated operations
+![License](https://img.shields.io/github/license/a-25/ios-mcp-code-quality-server)
+![Tests](https://img.shields.io/github/actions/workflow/status/a-25/ios-mcp-code-quality-server/test.yml)
+![Node Version](https://img.shields.io/node/v/ios-mcp-code-quality-server)
 
 ## Quick Start
 
-### Local Development
+Get up and running in minutes:
 
-1. **Install dependencies:**
+```bash
+# Install dependencies
+npm install
+
+# Start the server
+npm start
+```
+
+The server will start on `http://localhost:3000` and be ready to receive MCP requests.
+
+## Features
+
+- **🧪 iOS Test Execution**: Run Xcode tests with detailed failure analysis
+- **📱 Multiple Schemes Support**: Test different iOS project configurations  
+- **🔍 SwiftLint Integration**: Automated Swift code style and quality checking
+- **📊 Structured Reporting**: Clear, actionable feedback with file locations and line numbers
+- **🛠 Build Error Detection**: Intelligent parsing of Xcode build failures
+- **🔒 Local Processing**: All analysis happens on your machine for security
+- **⚡ Fast Results**: Optimized for quick feedback cycles
+
+## Installation
+
+### Prerequisites
+
+- **Node.js 18+**: Required for running the MCP server
+- **Xcode**: For iOS project building and testing
+- **iOS Simulator**: For running tests (or physical iOS device)
+- **SwiftLint** (optional): For code quality analysis
+
+### Setup Steps
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/a-25/ios-mcp-code-quality-server.git
+   cd ios-mcp-code-quality-server
+   ```
+
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. **Build the server:**
+3. **Build the project:**
    ```bash
    npm run build
    ```
 
-3. **Start the server:**
+4. **Start the server:**
    ```bash
    npm start
    ```
 
-4. **Configure your MCP client:**
-   Set the server endpoint to `http://localhost:3000`
+### AI Assistant Integration
+
+Configure your AI assistant (Claude, Copilot, etc.) to use this MCP server:
+
+```json
+{
+  "mcpServers": {
+    "ios-code-quality": {
+      "url": "http://localhost:3000",
+      "timeout": 30000
+    }
+  }
+}
+```
+
+## Configuration
+
+The server supports several configuration options through environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Server port | `3000` |
+| `NODE_ENV` | Environment mode | `development` |
+| `LOG_LEVEL` | Logging verbosity | `info` |
+
+Example configuration:
+```bash
+export PORT=8080
+export LOG_LEVEL=debug
+npm start
+```
 
 ### Configuration
 
@@ -93,163 +118,223 @@ SESSION_CLEANUP_INTERVAL_MS=300000
 MAX_CONCURRENT_TASKS=5
 ```
 
-## API Reference
+## Tools & Capabilities
 
-### Tools
-
-#### `test` - Run iOS Tests
-Execute iOS tests and get detailed failure analysis.
+### Test Tool
+Executes iOS tests and provides detailed failure analysis.
 
 **Parameters:**
-- `xcodeproj` (optional): Path to Xcode project
-- `xcworkspace` (optional): Path to Xcode workspace  
-- `scheme` (optional): Build scheme to use
+- `xcodeproj` (optional): Path to Xcode project file
+- `xcworkspace` (optional): Path to Xcode workspace file
+- **Note**: Either `xcodeproj` or `xcworkspace` parameter is mandatory (at least one must be provided)
+- `scheme` (required): Xcode scheme to test
 - `destination` (optional): Test destination (simulator/device)
+  - Default value: `generic/platform=iOS Simulator`
 
-**Response:**
-- Success: Detailed test results with pass/fail counts
-- Failure: Error analysis with suggestions
+**Example Responses:**
 
-#### `lint` - Run SwiftLint
-Analyze code quality using SwiftLint.
-
-**Parameters:**
-- `xcodeproj` (optional): Path to Xcode project
-- `xcworkspace` (optional): Path to Xcode workspace
-- `path` (optional): Path to analyze (defaults to ./Sources)
-
-**Response:**
-- Linting results with violations and fixes applied
-
-### Endpoints
-
-#### `GET /health`
-System health check with detailed status information.
-
-**Response:**
+**Success Case (all tests passed):**
 ```json
 {
-  "status": "healthy|degraded|unhealthy",
-  "timestamp": "2025-01-01T00:00:00.000Z",
-  "uptime": 12345,
-  "version": "0.1.0",
-  "checks": {
-    "memory": { "status": "pass", "message": "Memory usage: 0.45%" },
-    "filesystem": { "status": "pass", "message": "File system access OK" },
-    "configuration": { "status": "pass", "message": "Configuration OK" }
+  "content": [
+    {
+      "type": "text", 
+      "text": "✅ All tests passed."
+    }
+  ]
+}
+```
+
+**Build Errors Case (compilation issues):**
+```json
+{
+  "content": [
+    {
+      "type": "text", 
+      "text": "❌ Build failed. Please provide the code for the failing test and the class/function under test for better AI suggestions."
+    }
+  ]
+}
+```
+
+**Test Errors Case (tests built but failed):**
+```json
+{
+  "content": [
+    {
+      "type": "text", 
+      "text": "❌ Test failed. Please provide the code for the failing test and the class/function under test for better AI suggestions."
+    }
+  ]
+}
+```
+
+### Lint Tool
+Performs lint analysis on your iOS project. Currently supported linters: [SwiftLint](https://github.com/realm/SwiftLint)
+
+## API Endpoints
+
+### POST /
+Main MCP endpoint for tool execution requests.
+
+**Headers:**
+- `mcp-session-id`: Optional session identifier
+- `Content-Type`: `application/json`
+
+**Request Body:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "test",
+    "arguments": {
+      "xcodeproj": "MyApp.xcodeproj",
+      "scheme": "MyApp",
+      "destination": "platform=iOS Simulator,name=iPhone 15"
+    }
   }
 }
 ```
 
+
+## Usage Examples
+
+### Running Tests with AI Assistant
+
+```
+"Can you run the tests for the LoginFeature scheme and tell me what failed?"
+```
+
+The AI assistant will use the test tool to:
+1. Execute tests for the specified scheme
+2. Parse build and test results
+3. Provide a structured summary of failures
+4. Highlight specific files and line numbers that need attention
+
+### Code Quality Analysis
+
+```
+"Please analyze the code quality of my iOS project using SwiftLint"
+```
+
 ## Architecture
 
-### Core Components
-
-- **Server Core** (`src/index.ts`) - Main MCP server with Express integration
-- **Task Orchestrator** (`src/core/taskOrchestrator.ts`) - Manages test and lint operations
-- **Security Middleware** (`src/middleware/security.ts`) - Rate limiting and security headers
-- **Error Handling** (`src/utils/errorHandling.ts`) - MCP-compliant error management
-- **Health System** (`src/utils/health.ts`) - System monitoring and health checks
-- **Structured Logging** (`src/utils/logger.ts`) - Configurable logging system
-
-### Security Architecture
-
-1. **Input Layer**: Zod validation and sanitization
-2. **Rate Limiting**: Per-client request limiting
-3. **Transport Security**: DNS rebinding protection
-4. **Session Management**: Automatic cleanup and isolation
-5. **Error Handling**: Safe error exposure without information leakage
-
-### Performance Features
-
-- **Concurrent Task Management**: Queue-based task execution
-- **Timeout Protection**: Prevents hanging operations  
-- **Memory Monitoring**: Tracks resource usage
-- **Session Cleanup**: Automatic resource cleanup
-
-## Development
-
-### Project Structure
 ```
-src/
-├── config/          # Environment configuration
-├── core/            # Core business logic
-├── middleware/      # Express middleware
-├── utils/           # Utility functions
-└── __tests__/       # Test files
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   AI Assistant  │───▶│   MCP Server     │───▶│   Xcode Tools   │
+│   (Claude, etc) │    │   (port 3000)    │    │   (xcodebuild)  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                 │
+                                 ▼
+                       ┌──────────────────┐
+                       │   SwiftLint      │
+                       │   (optional)     │
+                       └──────────────────┘
 ```
 
-### Scripts
-
-```bash
-npm start          # Build and start server
-npm test           # Run test suite
-npm run lint       # Run code linting
-```
-
-### Testing
-
-The server includes comprehensive tests:
-- Unit tests for core functionality
-- Integration tests for MCP protocol
-- Health check validation
-- Error handling verification
-
-Run tests with:
-```bash
-npm test
-```
-
-### Code Quality
-
-- **ESLint** configuration for consistent code style
-- **TypeScript** for type safety
-- **Structured logging** for debugging
-- **Error boundaries** for fault tolerance
-
-## Security Considerations
-
-- **Local deployment only** - designed for local development use
-- **Rate limiting** prevents abuse
-- **Input validation** prevents injection attacks  
-- **Session isolation** prevents cross-session data leakage
-- **Secure defaults** for all configuration options
+The server acts as a bridge between AI assistants and iOS development tools, providing a standardized interface for code quality operations.
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Server won't start**
-   - Check port availability: `lsof -i :3000`
-   - Verify Node.js version: `node --version` (requires Node 18+)
+**Server won't start:**
+- Check that port 3000 is available: `lsof -i :3000`
+- Ensure Node.js 18+ is installed: `node --version`
+- Verify dependencies are installed: `npm list`
 
-2. **Health check fails**
-   - Check filesystem permissions for `/tmp` directory
-   - Verify memory availability
+**Tests fail to run:**
+- Ensure Xcode is installed and command line tools are available
+- Check that the specified scheme exists in your project
+- Verify the destination device/simulator is available: `xcrun simctl list devices`
 
-3. **Rate limiting errors**
-   - Adjust `RATE_LIMIT_MAX_REQUESTS` environment variable
-   - Check client request patterns
+**SwiftLint not working:**
+- Install SwiftLint: `brew install swiftlint`
+- Verify installation: `swiftlint version`
 
-### Debugging
+**MCP Connection Issues:**
+- Verify the server is running: check that the process is active on port 3000 with `lsof -i :3000`
+- Check AI assistant MCP configuration
+- Review server logs for connection errors
 
-Enable debug logging:
+### Debug Mode
+
+Enable detailed logging for troubleshooting:
+
 ```bash
-LOG_LEVEL=debug npm start
+export LOG_LEVEL=debug
+npm start
 ```
 
-Check health status:
+## Development
+
+### Running Tests
+
 ```bash
-curl http://localhost:3000/health
+# Run all tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+```
+
+### Code Quality
+
+```bash
+# Run linter
+npm run lint
+
+# Fix linting issues
+npm run lint:fix
+
+# Type checking
+npm run type-check
+```
+
+### Building
+
+```bash
+npm run build
 ```
 
 ## Contributing
 
-1. Follow existing code style (ESLint configuration provided)
-2. Add tests for new features
-3. Update documentation for API changes
-4. Ensure security best practices
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and add tests
+4. Ensure all tests pass: `npm test`
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to your branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
+
+### Development Guidelines
+
+- Write tests for new features
+- Follow TypeScript best practices
+- Update documentation for API changes
+- Ensure backwards compatibility when possible
 
 ## License
 
-See LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Security
+
+- All processing happens locally on your machine
+- No data is sent to external services without explicit configuration
+- Do not share your local server endpoint publicly
+- Keep dependencies updated to address security vulnerabilities
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/a-25/ios-mcp-code-quality-server/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/a-25/ios-mcp-code-quality-server/discussions)
+- **Documentation**: This README and inline code documentation
+
+---
+
+Made with ❤️ for the iOS development community
