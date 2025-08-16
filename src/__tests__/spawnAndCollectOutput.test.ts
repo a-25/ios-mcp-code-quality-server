@@ -3,7 +3,6 @@ import { spawnAndCollectOutput } from '../utils/spawnAndCollectOutput.js';
 
 // Mock command for testing
 const echoCmd = 'echo "Hello, World!"';
-// Removed: files object (no longer needed)
 
 describe('spawnAndCollectOutput', () => {
   it('should capture stdout and stderr from a successful command', async () => {
@@ -17,6 +16,4 @@ describe('spawnAndCollectOutput', () => {
     expect(result.stdout).toBe('');
     expect(result.stderr).not.toBe('');
   });
-
-  // ...existing code...
 });

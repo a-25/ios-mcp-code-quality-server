@@ -1,6 +1,6 @@
 
 // import testFailureMock from './mockData/testFailureMock.json' with { type: 'json' };
-const testFailureMock = require('./mockData/testFailureMock.json');
+import testFailureMock from './mockData/testFailureMock.json' with { type: 'json' };
 import { vi } from 'vitest';
 
 // Mock execAsync before importing getXcresultObject
@@ -20,8 +20,8 @@ import type { TestFixOptions } from '../core/taskOptions.js';
 describe('MCP test tool main logic', () => {
   it('returns build error and no test failures when build fails', async () => {
     // Load the build failure output from a file
-    const fs = require('fs');
-    const path = require('path');
+  const fs = await import('node:fs');
+  const path = await import('node:path');
     const buildFailureOutput = fs.readFileSync(path.join(__dirname, 'mockData', 'buildFailureOutput.txt'), 'utf8');
     const { runTestsAndParseFailures } = await import('../core/testRunner.js');
     // Use a mock function for spawnAndCollectOutputImpl

@@ -1,26 +1,12 @@
+import { TestFixOptions } from "./taskOptions.js";
+import { exec } from "child_process";
+import util from "util";
+import fs from "fs-extra";
+import { spawnAndCollectOutput, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
+
 export interface ExecAsyncResult {
   stdout: string;
 }
-async function cleanupRunDir(runDir: string): Promise<void> {
-  try {
-    await fs.rm(runDir, { recursive: true, force: true });
-  } catch { }
-}
-import { TestFixOptions } from "./taskOptions.js";
-import { exec } from "child_process";
-import util from "util";
-import fs from "fs-extra";
-import { spawnAndCollectOutput, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
-
-
-
-
-
-import { TestFixOptions } from "./taskOptions.js";
-import { exec } from "child_process";
-import util from "util";
-import fs from "fs-extra";
-import { spawnAndCollectOutput, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
 
 async function cleanupRunDir(runDir: string): Promise<void> {
   try {

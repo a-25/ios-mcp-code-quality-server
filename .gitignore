@@ -2,9 +2,7 @@
 coverage/
 .nyc_output/
 
-# Jest cache
-jest-cache/
-jest-coverage/
+# Test runner cache
 .cache/
 
 # Compiled test output (if using TypeScript)

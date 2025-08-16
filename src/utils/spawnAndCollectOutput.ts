@@ -1,7 +1,3 @@
-export interface SpawnOutputResult {
-  stdout: string;
-  stderr: string;
-}
 import { execa } from "execa";
 export interface SpawnOutputResult {
   stdout: string;

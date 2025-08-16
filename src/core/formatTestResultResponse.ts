@@ -12,7 +12,7 @@ export interface MCPContent {
 export function formatTestResultResponse(
   input: TestFixOptions,
   validation: import("./taskOptions.js").ValidationResult,
-  result: TaskResult | undefined
+  result: TaskResult<string> | undefined
 ): { content: MCPContent[]; _meta?: any } {
   if (!validation.valid) {
     return {

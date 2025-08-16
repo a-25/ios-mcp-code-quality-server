@@ -60,7 +60,7 @@ app.post('/', async (req, res) => {
         const options = input as TestFixOptions;
         const validation = validateTestFixOptions(options);
         try {
-          const result = await orchestrateTask(TaskType.TestFix, options) as TaskResult;
+          const result = await orchestrateTask(TaskType.TestFix, options) as TaskResult<string>;
           return formatTestResultResponse(options, validation, result);
         } catch (err) {
           const errorMsg = (err && typeof err === "object" && "message" in err) ? (err as Error).message : "Task failed";

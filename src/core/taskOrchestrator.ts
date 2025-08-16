@@ -1,6 +1,6 @@
 // Explicit result type for orchestrateTask and helpers
 import type { TestFailure, TestRunResult } from "./testRunner.js";
-export type TaskResult<T = any> =
+export type TaskResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
 import PQueue from "p-queue";
