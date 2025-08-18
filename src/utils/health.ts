@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { env } from "../config/environment.js";
 import { logger } from "./logger.js";
+import * as os from "os";
+
+// Health check best practices based on:
+// https://microservices.io/patterns/observability/health-check-api.html
+// https://docs.microsoft.com/en-us/dotnet/architecture/microservices/implement-resilient-microservices/monitor-app-health
 
 export interface HealthStatus {
   status: "healthy" | "unhealthy" | "degraded";
@@ -63,23 +68,23 @@ class HealthChecker {
 
       const duration = Date.now() - start;
 
-      if (usage > 0.9) {
+      if (usage > env.MEMORY_ERROR_THRESHOLD) {
         return {
           status: "fail",
-          message: `High memory usage: ${usage.toFixed(2)}%`,
+          message: `High memory usage: ${(usage * 100).toFixed(2)}%`,
           duration
         };
-      } else if (usage > 0.7) {
+      } else if (usage > env.MEMORY_WARNING_THRESHOLD) {
         return {
           status: "warn",
-          message: `Elevated memory usage: ${usage.toFixed(2)}%`,
+          message: `Elevated memory usage: ${(usage * 100).toFixed(2)}%`,
           duration
         };
       }
 
       return {
         status: "pass",
-        message: `Memory usage: ${usage.toFixed(2)}%`,
+        message: `Memory usage: ${(usage * 100).toFixed(2)}%`,
         duration
       };
     } catch (error) {
@@ -95,7 +100,7 @@ class HealthChecker {
     const start = Date.now();
     try {
       const fs = await import("fs/promises");
-      const testFile = "/tmp/mcp-health-check";
+      const testFile = `${os.tmpdir()}/mcp-health-check`;
 
       await fs.writeFile(testFile, "health check");
       await fs.readFile(testFile, "utf-8");

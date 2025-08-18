@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { env } from "../config/environment.js";
 import { logger } from "../utils/logger.js";
+import { McpErrorCode } from "../utils/errorHandling.js";
 
 interface RateLimitStore {
   [key: string]: {
@@ -11,6 +12,9 @@ interface RateLimitStore {
 
 const store: RateLimitStore = {};
 
+// DNS rebinding protection best practice
+// Reference: https://portswigger.net/web-security/cors/restricting-access-to-servers
+// Goal: Prevent malicious websites from accessing localhost services via DNS rebinding attacks
 // Clean up old entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
@@ -40,7 +44,7 @@ export const rateLimitMiddleware = (req: Request, res: Response, next: NextFunct
     return res.status(429).json({
       jsonrpc: "2.0",
       error: {
-        code: -32000,
+        code: McpErrorCode.RATE_LIMIT_EXCEEDED,
         message: "Too Many Requests: Rate limit exceeded"
       },
       id: null

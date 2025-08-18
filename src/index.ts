@@ -57,7 +57,7 @@ app.post("/", async (req, res) => {
           logger.info("MCP session initialized", { sessionId });
         },
         enableDnsRebindingProtection: true,
-        allowedHosts: env.ALLOWED_HOSTS
+        allowedHosts: env.ALLOWED_HOSTS_LIST
       });
       transport.onclose = () => {
         if (transport.sessionId) {
@@ -98,7 +98,7 @@ app.post("/", async (req, res) => {
 
             const result = await withTimeout(
               orchestrateTask(TaskType.TestFix, options) as Promise<TaskResult<string>>,
-              300000, // 5 minutes timeout
+              env.TEST_TIMEOUT_MS,
               "test execution"
             );
 
@@ -119,7 +119,7 @@ app.post("/", async (req, res) => {
           inputSchema: {
             xcodeproj: z.string().optional(),
             xcworkspace: z.string().optional(),
-            path: z.string().optional().describe("Path to analyze (defaults to ./Sources)")
+            path: z.string().describe("Path to analyze (required)")
           }
         },
         async (input) => {
@@ -140,7 +140,7 @@ app.post("/", async (req, res) => {
 
             const result = await withTimeout(
               orchestrateTask(TaskType.LintFix, options),
-              120000, // 2 minutes timeout
+              env.LINT_TIMEOUT_MS,
               "lint execution"
             );
 
@@ -196,7 +196,7 @@ const server = app.listen(env.PORT, () => {
     port: env.PORT,
     environment: env.NODE_ENV,
     version: env.MCP_SERVER_VERSION,
-    allowedHosts: env.ALLOWED_HOSTS
+    allowedHosts: env.ALLOWED_HOSTS_LIST
   });
 });
 

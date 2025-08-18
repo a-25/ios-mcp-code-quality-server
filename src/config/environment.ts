@@ -6,18 +6,36 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(["error", "warn", "info", "debug"]).default("info"),
   MCP_SERVER_NAME: z.string().default("ios-mcp-code-quality-server"),
   MCP_SERVER_VERSION: z.string().default("0.1.0"),
-  ALLOWED_HOSTS: z.string().optional().transform(hosts =>
-    hosts ? hosts.split(",").map(h => h.trim()) : ["127.0.0.1", "localhost", "127.0.0.1:3000", "localhost:3000"]
-  ),
+  // DNS rebinding protection - limits which hosts can access the server
+  // Best practice: https://portswigger.net/web-security/cors/restricting-access-to-servers
+  ALLOWED_HOSTS: z.string().optional(),
   RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default("60000"), // 1 minute
   RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default("100"),
   SESSION_CLEANUP_INTERVAL_MS: z.string().transform(Number).default("300000"), // 5 minutes
-  MAX_CONCURRENT_TASKS: z.string().transform(Number).default("5")
+  MAX_CONCURRENT_TASKS: z.string().transform(Number).default("5"),
+  // Timeout configurations for iOS operations which can be very slow
+  TEST_TIMEOUT_MS: z.string().transform(Number).default("3600000"), // 1 hour default for iOS tests
+  LINT_TIMEOUT_MS: z.string().transform(Number).default("600000"), // 10 minutes default for SwiftLint
+  // Health check memory thresholds (as decimal ratios, e.g., 0.9 = 90%)
+  MEMORY_WARNING_THRESHOLD: z.string().transform(Number).default("0.7"),
+  MEMORY_ERROR_THRESHOLD: z.string().transform(Number).default("0.9")
 });
 
-export type Environment = z.infer<typeof envSchema>;
+const rawEnv = envSchema.parse(process.env);
 
-export const env: Environment = envSchema.parse(process.env);
+export type Environment = z.infer<typeof envSchema> & {
+  ALLOWED_HOSTS_LIST: string[];
+};
+
+// Process ALLOWED_HOSTS after parsing to include the port
+const allowedHostsList = rawEnv.ALLOWED_HOSTS 
+  ? rawEnv.ALLOWED_HOSTS.split(",").map(h => h.trim())
+  : ["127.0.0.1", "localhost", `127.0.0.1:${rawEnv.PORT}`, `localhost:${rawEnv.PORT}`];
+
+export const env: Environment = {
+  ...rawEnv,
+  ALLOWED_HOSTS_LIST: allowedHostsList
+};
 
 export const isDevelopment = env.NODE_ENV === "development";
 export const isProduction = env.NODE_ENV === "production";
