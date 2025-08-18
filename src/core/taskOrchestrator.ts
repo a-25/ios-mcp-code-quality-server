@@ -5,7 +5,7 @@ export type TaskResult<T> =
   | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
 import PQueue from "p-queue";
 import { runTestsAndParseFailures } from "./testRunner.js";
-import { runSwiftLintFix, checkSwiftLintInstallation, runSwiftLintWithConfig, runSwiftLintOnCodeChanges, type SwiftLintResult } from "./swiftLint.js";
+import { runSwiftLintFix, checkSwiftLintInstallation, runSwiftLintOnCodeChanges, type SwiftLintResult } from "./swiftLint.js";
 import { exec } from "child_process";
 import util from "util";
 import { TestFixOptions, LintFixOptions } from "./taskOptions.js";
@@ -73,21 +73,9 @@ export async function handleLintFix(options: LintFixOptions): Promise<TaskResult
   try {
     let result: SwiftLintResult;
     
-    // If we have code changes, lint them directly
-    if (options.codeChanges) {
-      console.log("[MCP] Linting code changes");
-      result = await runSwiftLintOnCodeChanges(options.codeChanges, options.configPaths);
-    } else {
-      // Otherwise, lint the project directory
-      const targetPath = options.xcworkspace 
-        ? options.xcworkspace.replace(/\.xcworkspace$/, '') // Remove extension for directory
-        : options.xcodeproj 
-          ? options.xcodeproj.replace(/\.xcodeproj$/, '') // Remove extension for directory
-          : "./Sources"; // Default fallback
-      
-      console.log(`[MCP] Linting project at: ${targetPath}`);
-      result = await runSwiftLintWithConfig(targetPath, options.configPaths);
-    }
+    // Lint the provided code file changes
+    console.log("[MCP] Linting code file changes");
+    result = await runSwiftLintOnCodeChanges(options.codeFileChanges, options.configPath);
     
     if (!result.success) {
       return { 

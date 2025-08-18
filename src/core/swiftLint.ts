@@ -19,7 +19,18 @@ export interface SwiftLintResult {
   error?: string;
 }
 
-export async function checkSwiftLintInstallation(): Promise<{ installed: boolean; version?: string; error?: string }> {
+export interface SwiftLintInstallationResult {
+  installed: boolean;
+  version?: string;
+  error?: string;
+}
+
+export interface CodeFileChange {
+  name: string;
+  changes: string;
+}
+
+export async function checkSwiftLintInstallation(): Promise<SwiftLintInstallationResult> {
   try {
     const { stdout } = await execa("swiftlint", ["version"]);
     return { installed: true, version: stdout.trim() };
@@ -27,7 +38,7 @@ export async function checkSwiftLintInstallation(): Promise<{ installed: boolean
     if (error.code === 'ENOENT') {
       return { 
         installed: false, 
-        error: "SwiftLint is not installed. Please install it using: brew install swiftlint" 
+        error: "SwiftLint is not installed. Please install it from: https://github.com/realm/SwiftLint?tab=readme-ov-file#installation" 
       };
     }
     return { 
@@ -39,19 +50,14 @@ export async function checkSwiftLintInstallation(): Promise<{ installed: boolean
 
 export async function runSwiftLintWithConfig(
   targetPath: string, 
-  configPaths?: string | string[]
+  configPath?: string
 ): Promise<SwiftLintResult> {
   try {
     const args = ["lint", "--path", targetPath, "--reporter", "json"];
     
-    // Add config file arguments
-    if (configPaths) {
-      const configs = Array.isArray(configPaths) ? configPaths : [configPaths];
-      for (const configPath of configs) {
-        if (await fs.pathExists(configPath)) {
-          args.push("--config", configPath);
-        }
-      }
+    // Add config file argument if provided and exists
+    if (configPath && await fs.pathExists(configPath)) {
+      args.push("--config", configPath);
     }
 
     const { stdout, stderr } = await execa("swiftlint", args);
@@ -75,7 +81,7 @@ export async function runSwiftLintWithConfig(
       }
     } catch (parseError) {
       // If JSON parsing fails, treat as plain text output
-      console.warn("[SwiftLint] Failed to parse JSON output, using plain text");
+      console.warn("[SwiftLint] Failed to parse JSON output, using plain text:", (parseError as Error).message);
     }
 
     return {
@@ -94,23 +100,45 @@ export async function runSwiftLintWithConfig(
 }
 
 export async function runSwiftLintOnCodeChanges(
-  codeChanges: string,
-  configPaths?: string | string[]
+  codeFileChanges: CodeFileChange[],
+  configPath?: string
 ): Promise<SwiftLintResult> {
   try {
-    // Create a temporary Swift file with the code changes
+    // Create a temporary directory for all the changed files
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'swiftlint-'));
-    const tempFile = path.join(tempDir, 'temp.swift');
+    const tempFiles: string[] = [];
     
     try {
-      await fs.writeFile(tempFile, codeChanges);
-      const result = await runSwiftLintWithConfig(tempFile, configPaths);
+      // Create temporary files for each code change
+      for (const codeChange of codeFileChanges) {
+        const tempFile = path.join(tempDir, codeChange.name);
+        // Ensure the directory structure exists
+        await fs.ensureDir(path.dirname(tempFile));
+        await fs.writeFile(tempFile, codeChange.changes);
+        tempFiles.push(tempFile);
+      }
+
+      // Run SwiftLint on the entire temp directory
+      const result = await runSwiftLintWithConfig(tempDir, configPath);
       
-      // Update file paths in warnings to be more meaningful
-      result.warnings = result.warnings.map(warning => ({
-        ...warning,
-        file: warning.file.replace(tempFile, '<code-changes>')
-      }));
+      // Update file paths in warnings to map back to original file names
+      result.warnings = result.warnings.map(warning => {
+        // Find which original file this warning corresponds to
+        for (const codeChange of codeFileChanges) {
+          const expectedTempPath = path.join(tempDir, codeChange.name);
+          if (warning.file === expectedTempPath) {
+            return {
+              ...warning,
+              file: codeChange.name
+            };
+          }
+        }
+        // If no match found, use relative path from temp dir
+        return {
+          ...warning,
+          file: warning.file.replace(tempDir + path.sep, '')
+        };
+      });
       
       return result;
     } catch (error: any) {
@@ -118,14 +146,14 @@ export async function runSwiftLintOnCodeChanges(
         warnings: [],
         output: '',
         success: false,
-        error: `Failed to create temp file for linting: ${error.message}`
+        error: `Failed to process code changes: ${error.message}`
       };
     } finally {
-      // Clean up temp file
+      // Clean up temp directory
       try {
         await fs.remove(tempDir);
       } catch (cleanupError) {
-        console.warn("[SwiftLint] Failed to cleanup temp file:", cleanupError);
+        console.warn("[SwiftLint] Failed to cleanup temp directory", tempDir, ":", (cleanupError as Error).message);
       }
     }
   } catch (error: any) {
@@ -133,7 +161,7 @@ export async function runSwiftLintOnCodeChanges(
       warnings: [],
       output: '',
       success: false,
-      error: `Failed to create temp file for linting: ${error.message}`
+      error: `Failed to create temp directory for linting: ${error.message}`
     };
   }
 }

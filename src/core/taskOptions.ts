@@ -10,11 +10,11 @@ export interface TestFixOptions {
 }
 
 export interface LintFixOptions {
-  xcodeproj?: string;
-  xcworkspace?: string;
-  codeChanges?: string;
-  configPaths?: string | string[];
+  codeFileChanges: CodeFileChange[];
+  configPath?: string;
 }
+
+import type { CodeFileChange } from './swiftLint.js';
 
 export function validateTestFixOptions(options: Partial<TestFixOptions>): ValidationResult {
   if (!options.xcodeproj && !options.xcworkspace) {
@@ -27,10 +27,20 @@ export function validateTestFixOptions(options: Partial<TestFixOptions>): Valida
 }
 
 export function validateLintFixOptions(options: Partial<LintFixOptions>): ValidationResult {
-  // For LintFix, we don't require xcodeproj/xcworkspace as we can lint code changes directly
-  // The main requirement is that we have either codeChanges or a project structure to work with
-  if (!options.codeChanges && !options.xcodeproj && !options.xcworkspace) {
-    return { valid: false, error: "Either codeChanges or project path (xcodeproj/xcworkspace) must be provided for linting" };
+  // For LintFix, we require codeFileChanges array
+  if (!options.codeFileChanges || !Array.isArray(options.codeFileChanges) || options.codeFileChanges.length === 0) {
+    return { valid: false, error: "codeFileChanges array must be provided and non-empty for linting" };
   }
+  
+  // Validate each code file change has required fields
+  for (const codeChange of options.codeFileChanges) {
+    if (!codeChange.name || typeof codeChange.name !== 'string') {
+      return { valid: false, error: "Each code file change must have a valid 'name' field" };
+    }
+    if (!codeChange.changes || typeof codeChange.changes !== 'string') {
+      return { valid: false, error: "Each code file change must have a valid 'changes' field" };
+    }
+  }
+  
   return { valid: true };
 }

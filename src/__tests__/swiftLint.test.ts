@@ -13,6 +13,7 @@ vi.mock('fs-extra', () => ({
     writeFile: vi.fn(),
     remove: vi.fn(),
     pathExists: vi.fn(),
+    ensureDir: vi.fn(),
   },
 }));
 
@@ -27,6 +28,11 @@ vi.mock('os', () => ({
 vi.mock('path', () => ({
   default: {
     join: vi.fn((...parts) => parts.join('/')),
+    dirname: vi.fn((filePath) => {
+      const parts = filePath.split('/');
+      return parts.slice(0, -1).join('/');
+    }),
+    sep: '/',
   },
 }));
 
@@ -58,7 +64,7 @@ describe('SwiftLint Functions', () => {
 
       expect(result.installed).toBe(false);
       expect(result.error).toContain('SwiftLint is not installed');
-      expect(result.error).toContain('brew install swiftlint');
+      expect(result.error).toContain('https://github.com/realm/SwiftLint');
     });
 
     it('should return installed=false with error message for other failures', async () => {
@@ -108,19 +114,6 @@ describe('SwiftLint Functions', () => {
       ]);
     });
 
-    it('should handle multiple config files', async () => {
-      (fs.pathExists as any).mockResolvedValue(true);
-      (execa as any).mockResolvedValue({ stdout: '', stderr: '' });
-
-      await runSwiftLintWithConfig('/test/path', ['/config1/.swiftlint.yml', '/config2/.swiftlint.yml']);
-
-      expect(execa).toHaveBeenCalledWith('swiftlint', [
-        'lint', '--path', '/test/path', '--reporter', 'json',
-        '--config', '/config1/.swiftlint.yml',
-        '--config', '/config2/.swiftlint.yml'
-      ]);
-    });
-
     it('should skip non-existent config files', async () => {
       (fs.pathExists as any).mockResolvedValue(false);
       (execa as any).mockResolvedValue({ stdout: '', stderr: '' });
@@ -158,74 +151,83 @@ describe('SwiftLint Functions', () => {
   });
 
   describe('runSwiftLintOnCodeChanges', () => {
-    it('should create temp file and lint code changes', async () => {
+    it('should create temp files and lint code changes', async () => {
       const mockTempDir = '/tmp/swiftlint-123456';
-      const mockTempFile = '/tmp/swiftlint-123456/temp.swift';
-      const codeChanges = 'func testFunction() { print("test") }';
+      const codeFileChanges = [
+        { name: 'TestFile.swift', changes: 'func testFunction() { print("test") }' }
+      ];
 
       (fs.mkdtemp as any).mockResolvedValue(mockTempDir);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
       (fs.writeFile as any).mockResolvedValue(undefined);
       (fs.remove as any).mockResolvedValue(undefined);
+      (fs.pathExists as any).mockResolvedValue(false); // No config file
       (execa as any).mockResolvedValue({ 
-        stdout: `{"file":"${mockTempFile}","line":1,"character":1,"severity":"warning","reason":"Test warning","rule_id":"test_rule"}`,
+        stdout: `{"file":"${mockTempDir}/TestFile.swift","line":1,"character":1,"severity":"warning","reason":"Test warning","rule_id":"test_rule"}`,
         stderr: ''
       });
 
-      const result = await runSwiftLintOnCodeChanges(codeChanges);
+      const result = await runSwiftLintOnCodeChanges(codeFileChanges);
 
       expect(fs.mkdtemp).toHaveBeenCalledWith('/tmp/swiftlint-');
-      expect(fs.writeFile).toHaveBeenCalledWith(mockTempFile, codeChanges);
-      expect(execa).toHaveBeenCalledWith('swiftlint', ['lint', '--path', mockTempFile, '--reporter', 'json']);
+      expect(fs.ensureDir).toHaveBeenCalledWith(mockTempDir);
+      expect(fs.writeFile).toHaveBeenCalledWith(`${mockTempDir}/TestFile.swift`, codeFileChanges[0].changes);
+      expect(execa).toHaveBeenCalledWith('swiftlint', ['lint', '--path', mockTempDir, '--reporter', 'json']);
       
       expect(result.success).toBe(true);
       expect(result.warnings).toHaveLength(1);
-      expect(result.warnings[0].file).toBe('<code-changes>'); // Should replace temp file path
+      expect(result.warnings[0].file).toBe('TestFile.swift'); // Should map back to original filename
       expect(fs.remove).toHaveBeenCalledWith(mockTempDir);
     });
 
     it('should include config files when linting code changes', async () => {
       const mockTempDir = '/tmp/swiftlint-123456';
-      const mockTempFile = '/tmp/swiftlint-123456/temp.swift';
-      const codeChanges = 'func testFunction() { }';
+      const codeFileChanges = [
+        { name: 'TestFile.swift', changes: 'func testFunction() { }' }
+      ];
       const configPath = '/config/.swiftlint.yml';
 
       (fs.mkdtemp as any).mockResolvedValue(mockTempDir);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
       (fs.writeFile as any).mockResolvedValue(undefined);
       (fs.remove as any).mockResolvedValue(undefined);
       (fs.pathExists as any).mockResolvedValue(true);
       (execa as any).mockResolvedValue({ stdout: '', stderr: '' });
 
-      await runSwiftLintOnCodeChanges(codeChanges, configPath);
+      await runSwiftLintOnCodeChanges(codeFileChanges, configPath);
 
       expect(execa).toHaveBeenCalledWith('swiftlint', [
-        'lint', '--path', mockTempFile, '--reporter', 'json',
+        'lint', '--path', mockTempDir, '--reporter', 'json',
         '--config', configPath
       ]);
     });
 
-    it('should handle temp file creation errors', async () => {
+    it('should handle temp directory creation errors', async () => {
       const error = { message: 'Permission denied' };
       (fs.mkdtemp as any).mockRejectedValue(error);
 
-      const result = await runSwiftLintOnCodeChanges('test code');
+      const codeFileChanges = [{ name: 'test.swift', changes: 'test code' }];
+      const result = await runSwiftLintOnCodeChanges(codeFileChanges);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Failed to create temp file');
+      expect(result.error).toContain('Failed to create temp directory');
       expect(result.error).toContain('Permission denied');
     });
 
     it('should cleanup temp files even if linting fails', async () => {
       const mockTempDir = '/tmp/swiftlint-123456';
-      const mockTempFile = '/tmp/swiftlint-123456/temp.swift';
+      const codeFileChanges = [{ name: 'test.swift', changes: 'test code' }];
 
       (fs.mkdtemp as any).mockResolvedValue(mockTempDir);
+      (fs.ensureDir as any).mockResolvedValue(undefined);
       (fs.writeFile as any).mockResolvedValue(undefined);
       (fs.remove as any).mockResolvedValue(undefined);
+      (fs.pathExists as any).mockResolvedValue(false);
       
       const lintError = new Error('SwiftLint failed');
       (execa as any).mockRejectedValue(lintError);
 
-      const result = await runSwiftLintOnCodeChanges('test code');
+      const result = await runSwiftLintOnCodeChanges(codeFileChanges);
 
       expect(result.success).toBe(false);
       expect(fs.remove).toHaveBeenCalledWith(mockTempDir); // Should cleanup even on failure
