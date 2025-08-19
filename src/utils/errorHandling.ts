@@ -13,7 +13,6 @@ export enum McpErrorCode {
   RESOURCE_NOT_FOUND = -32002,
   PERMISSION_DENIED = -32003,
   RATE_LIMIT_EXCEEDED = -32004,
-  TIMEOUT = -32005,
 }
 
 export class McpError extends Error {
@@ -89,23 +88,7 @@ export function handleAsyncError<T>(
   });
 }
 
-export function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  operation: string
-): Promise<T> {
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new McpError(
-        McpErrorCode.TIMEOUT,
-        `Operation timed out: ${operation}`,
-        { timeoutMs }
-      ));
-    }, timeoutMs);
-  });
 
-  return Promise.race([promise, timeoutPromise]);
-}
 
 // Utility functions for common error scenarios
 export function taskNotFoundError(taskType: string) {

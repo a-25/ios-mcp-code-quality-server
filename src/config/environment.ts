@@ -11,9 +11,6 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default("100"),
   SESSION_CLEANUP_INTERVAL_MS: z.string().transform(Number).default("300000"), // 5 minutes
   MAX_CONCURRENT_TASKS: z.string().transform(Number).default("5"),
-  // Timeout configurations for iOS operations which can be very slow
-  TEST_TIMEOUT_MS: z.string().transform(Number).default("3600000"), // 1 hour default for iOS tests
-  LINT_TIMEOUT_MS: z.string().transform(Number).default("600000"), // 10 minutes default for SwiftLint
   // Health check memory thresholds (as decimal ratios, e.g., 0.9 = 90%)
   MEMORY_WARNING_THRESHOLD: z.string().transform(Number).default("0.7"),
   MEMORY_ERROR_THRESHOLD: z.string().transform(Number).default("0.9")

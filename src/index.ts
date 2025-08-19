@@ -11,7 +11,7 @@ import type { TaskResult } from "./core/taskOrchestrator.js";
 import { env } from "./config/environment.js";
 import { logger } from "./utils/logger.js";
 import { rateLimitMiddleware, securityHeadersMiddleware, requestLoggingMiddleware } from "./middleware/security.js";
-import { createMcpErrorResponse, McpError, McpErrorCode, handleAsyncError, withTimeout } from "./utils/errorHandling.js";
+import { createMcpErrorResponse, McpError, McpErrorCode, handleAsyncError } from "./utils/errorHandling.js";
 import { healthCheckHandler } from "./utils/health.js";
 
 const app = express();
@@ -94,11 +94,7 @@ app.post("/", async (req, res) => {
             logger.taskStart("test", options);
             const startTime = Date.now();
 
-            const result = await withTimeout(
-              orchestrateTask(TaskType.TestFix, options) as Promise<TaskResult<string>>,
-              env.TEST_TIMEOUT_MS,
-              "test execution"
-            );
+            const result = await orchestrateTask(TaskType.TestFix, options) as TaskResult<string>;
 
             const duration = Date.now() - startTime;
             logger.taskComplete("test", result.success, duration);
@@ -136,11 +132,7 @@ app.post("/", async (req, res) => {
             logger.taskStart("lint", options);
             const startTime = Date.now();
 
-            const result = await withTimeout(
-              orchestrateTask(TaskType.LintFix, options),
-              env.LINT_TIMEOUT_MS,
-              "lint execution"
-            );
+            const result = await orchestrateTask(TaskType.LintFix, options);
 
             const duration = Date.now() - startTime;
             logger.taskComplete("lint", result.success, duration);
