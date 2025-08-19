@@ -88,7 +88,7 @@ describe('SwiftLint Functions', () => {
 
       const result = await runSwiftLintWithConfig('/test/path');
 
-      expect(execa).toHaveBeenCalledWith('swiftlint', ['lint', '--path', '/test/path', '--reporter', 'json']);
+      expect(execa).toHaveBeenCalledWith('swiftlint', ['lint', '--reporter', 'json', '/test/path']);
       expect(result.success).toBe(true);
       expect(result.warnings).toHaveLength(1);
       expect(result.warnings[0]).toEqual({
@@ -109,8 +109,7 @@ describe('SwiftLint Functions', () => {
 
       expect(fs.pathExists).toHaveBeenCalledWith('/config/.swiftlint.yml');
       expect(execa).toHaveBeenCalledWith('swiftlint', [
-        'lint', '--path', '/test/path', '--reporter', 'json', 
-        '--config', '/config/.swiftlint.yml'
+        'lint', '--reporter', 'json', '--config', '/config/.swiftlint.yml', '/test/path'
       ]);
     });
 
@@ -120,7 +119,7 @@ describe('SwiftLint Functions', () => {
 
       await runSwiftLintWithConfig('/test/path', '/nonexistent/.swiftlint.yml');
 
-      expect(execa).toHaveBeenCalledWith('swiftlint', ['lint', '--path', '/test/path', '--reporter', 'json']);
+      expect(execa).toHaveBeenCalledWith('swiftlint', ['lint', '--reporter', 'json', '/test/path']);
     });
 
     it('should handle SwiftLint execution errors', async () => {
@@ -172,7 +171,7 @@ describe('SwiftLint Functions', () => {
       expect(fs.mkdtemp).toHaveBeenCalledWith('/tmp/swiftlint-');
       expect(fs.ensureDir).toHaveBeenCalledWith(mockTempDir);
       expect(fs.writeFile).toHaveBeenCalledWith(`${mockTempDir}/TestFile.swift`, codeFileChanges[0].changes);
-      expect(execa).toHaveBeenCalledWith('swiftlint', ['lint', '--path', mockTempDir, '--reporter', 'json']);
+      expect(execa).toHaveBeenCalledWith('swiftlint', ['lint', '--reporter', 'json', mockTempDir]);
       
       expect(result.success).toBe(true);
       expect(result.warnings).toHaveLength(1);
@@ -197,8 +196,7 @@ describe('SwiftLint Functions', () => {
       await runSwiftLintOnCodeChanges(codeFileChanges, configPath);
 
       expect(execa).toHaveBeenCalledWith('swiftlint', [
-        'lint', '--path', mockTempDir, '--reporter', 'json',
-        '--config', configPath
+        'lint', '--reporter', 'json', '--config', configPath, mockTempDir
       ]);
     });
 

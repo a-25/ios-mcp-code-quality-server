@@ -53,12 +53,15 @@ export async function runSwiftLintWithConfig(
   configPath?: string
 ): Promise<SwiftLintResult> {
   try {
-    const args = ["lint", "--path", targetPath, "--reporter", "json"];
+    const args = ["lint", "--reporter", "json"];
     
     // Add config file argument if provided and exists
     if (configPath && await fs.pathExists(configPath)) {
       args.push("--config", configPath);
     }
+    
+    // Add target path as positional argument at the end
+    args.push(targetPath);
 
     const { stdout, stderr } = await execa("swiftlint", args);
     
