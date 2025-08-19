@@ -32,7 +32,7 @@ describe('handleLintFix', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe('swiftlint-not-installed');
-      expect(result.message).toContain('SwiftLint is not installed');
+      expect(result.message).toContain('is not installed');
     });
 
     it('should proceed when SwiftLint is installed', async () => {

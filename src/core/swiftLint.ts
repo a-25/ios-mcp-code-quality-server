@@ -84,7 +84,7 @@ export async function runSwiftLintWithConfig(
       }
     } catch (parseError) {
       // If JSON parsing fails, treat as plain text output
-      console.warn("[SwiftLint] Failed to parse JSON output, using plain text:", (parseError as Error).message);
+      console.warn("[SwiftLint] Failed to parse JSON output, using plain text:", parseError);
     }
 
     return {
@@ -156,7 +156,7 @@ export async function runSwiftLintOnCodeChanges(
       try {
         await fs.remove(tempDir);
       } catch (cleanupError) {
-        console.warn("[SwiftLint] Failed to cleanup temp directory", tempDir, ":", (cleanupError as Error).message);
+        console.warn("[SwiftLint] Failed to cleanup temp directory", tempDir, ":", cleanupError);
       }
     }
   } catch (error: any) {
