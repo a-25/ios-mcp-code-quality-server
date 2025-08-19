@@ -12,10 +12,7 @@ interface RateLimitStore {
 
 const store: RateLimitStore = {};
 
-// DNS rebinding protection best practice
-// Reference: https://portswigger.net/web-security/cors/restricting-access-to-servers
-// Goal: Prevent malicious websites from accessing localhost services via DNS rebinding attacks
-// Clean up old entries every 5 minutes
+// Clean up old rate limit entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
   Object.keys(store).forEach(key => {

@@ -55,9 +55,7 @@ app.post("/", async (req, res) => {
         onsessioninitialized: (sessionId) => {
           transports[sessionId] = transport;
           logger.info("MCP session initialized", { sessionId });
-        },
-        enableDnsRebindingProtection: true,
-        allowedHosts: env.ALLOWED_HOSTS_LIST
+        }
       });
       transport.onclose = () => {
         if (transport.sessionId) {
@@ -195,8 +193,7 @@ const server = app.listen(env.PORT, () => {
   logger.info("MCP Server started successfully", {
     port: env.PORT,
     environment: env.NODE_ENV,
-    version: env.MCP_SERVER_VERSION,
-    allowedHosts: env.ALLOWED_HOSTS_LIST
+    version: env.MCP_SERVER_VERSION
   });
 });
 
