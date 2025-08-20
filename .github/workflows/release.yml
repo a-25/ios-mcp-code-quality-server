@@ -47,7 +47,7 @@ jobs:
         echo "Installing iOS MCP Code Quality Server..."
         npm ci --production
         echo "Installation complete!"
-        echo "Start the server with: npm run start:prod"
+        echo "Start the server with: ./start.sh"
         EOF
         chmod +x release-dist/install.sh
         
