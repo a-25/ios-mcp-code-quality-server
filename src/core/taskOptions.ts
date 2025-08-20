@@ -19,6 +19,15 @@ export interface LintFixOptions {
   configPath?: string;
 }
 
+export interface LintOptions {
+  /**
+   * Path to analyze (required)
+   */
+  path: string;
+  xcodeproj?: string;
+  xcworkspace?: string;
+}
+
 export function validateTestFixOptions(options: Partial<TestFixOptions>): ValidationResult {
   if (!options.xcodeproj && !options.xcworkspace) {
     return { valid: false, error: "Either xcodeproj or xcworkspace must be provided" };
@@ -40,6 +49,14 @@ export function validateLintFixOptions(options: Partial<LintFixOptions>): Valida
     if (!filePath || typeof filePath !== 'string') {
       return { valid: false, error: "Each file path in changedFiles must be a valid non-empty string" };
     }
+  }
+  
+  return { valid: true };
+}
+
+export function validateLintOptions(options: Partial<LintOptions>): ValidationResult {
+  if (!options.path || typeof options.path !== 'string') {
+    return { valid: false, error: "Path must be provided and be a valid string" };
   }
   
   return { valid: true };

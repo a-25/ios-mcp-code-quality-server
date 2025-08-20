@@ -5,10 +5,10 @@ export type TaskResult<T> =
   | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
 import PQueue from "p-queue";
 import { runTestsAndParseFailures } from "./testRunner.js";
-import { checkSwiftLintInstallation, runSwiftLintOnChangedFiles, type SwiftLintResult } from "./swiftLint.js";
+import { checkSwiftLintInstallation, runSwiftLintOnChangedFiles, runSwiftLintWithConfig, type SwiftLintResult } from "./swiftLint.js";
 import { exec } from "child_process";
 import util from "util";
-import { TestFixOptions, LintFixOptions } from "./taskOptions.js";
+import { TestFixOptions, LintFixOptions, LintOptions } from "./taskOptions.js";
 
 const execAsync = util.promisify(exec);
 const queue = new PQueue({ concurrency: 2 });
@@ -101,9 +101,57 @@ export async function handleLintFix(options: LintFixOptions): Promise<TaskResult
   }
 }
 
+export async function handleLint(options: LintOptions): Promise<TaskResult<SwiftLintResult>> {
+  console.log(`[MCP] Running SwiftLint with options:`, options);
+  
+  // First check if SwiftLint is installed
+  const installationCheck = await checkSwiftLintInstallation();
+  if (!installationCheck.installed) {
+    console.log("[MCP] SwiftLint is not installed");
+    return { 
+      success: false, 
+      error: 'swiftlint-not-installed',
+      message: installationCheck.error || "SwiftLint is not installed"
+    };
+  }
+  
+  console.log(`[MCP] SwiftLint version: ${installationCheck.version}`);
+  
+  try {
+    let result: SwiftLintResult;
+    
+    // Lint the provided path
+    console.log("[MCP] Linting path:", options.path);
+    result = await runSwiftLintWithConfig(options.path);
+    
+    if (!result.success) {
+      return { 
+        success: false, 
+        error: 'swiftlint-execution-failed',
+        message: result.error || "SwiftLint execution failed"
+      };
+    }
+    
+    console.log(`[MCP] SwiftLint found ${result.warnings.length} warnings`);
+    console.log("[SwiftLint Output]:\n" + result.output);
+    
+    return { success: true, data: result };
+  } catch (err: any) {
+    const msg = String(err?.message || err);
+    if (/no such file|not found|does not exist|missing/i.test(msg)) {
+      return { success: false, error: "missing-project" };
+    }
+    if (/build error|build failed|xcodebuild/i.test(msg)) {
+      return { success: false, error: "build-error" };
+    }
+    return { success: false, error: msg };
+  }
+}
+
 export enum TaskType {
   TestFix = "test-fix",
-  LintFix = "lint-fix"
+  LintFix = "lint-fix",
+  Lint = "lint"
 }
 
 
@@ -125,6 +173,13 @@ export async function orchestrateTask(type: TaskType, options: any = {}): Promis
       return { success: false, error: String(err?.message || err || "unknown-error") };
     }
   }
+  async function runLint(): Promise<TaskResult<SwiftLintResult>> {
+    try {
+      return await handleLint(options as LintOptions);
+    } catch (err: any) {
+      return { success: false, error: String(err?.message || err || "unknown-error") };
+    }
+  }
   switch (type) {
   case TaskType.TestFix: {
     const r = await queue.add(runTestFix);
@@ -133,6 +188,11 @@ export async function orchestrateTask(type: TaskType, options: any = {}): Promis
   }
   case TaskType.LintFix: {
     const r = await queue.add(runLintFix);
+    result = r === undefined ? { success: false, error: "unknown-error" } : r;
+    break;
+  }
+  case TaskType.Lint: {
+    const r = await queue.add(runLint);
     result = r === undefined ? { success: false, error: "unknown-error" } : r;
     break;
   }

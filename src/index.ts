@@ -6,7 +6,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { orchestrateTask, TaskType } from "./core/taskOrchestrator.js";
 import { formatTestResultResponse } from "./core/formatTestResultResponse.js";
-import { validateTestFixOptions, validateLintFixOptions, TestFixOptions, LintFixOptions } from "./core/taskOptions.js";
+import { validateTestFixOptions, validateLintFixOptions, validateLintOptions, TestFixOptions, LintFixOptions, LintOptions } from "./core/taskOptions.js";
 import type { TaskResult } from "./core/taskOrchestrator.js";
 import { env } from "./config/environment.js";
 import { logger } from "./utils/logger.js";
@@ -119,8 +119,8 @@ app.post("/", async (req, res) => {
         },
         async (input) => {
           return handleAsyncError(async () => {
-            const options = input as LintFixOptions;
-            const validation = validateLintFixOptions(options);
+            const options = input as LintOptions;
+            const validation = validateLintOptions(options);
 
             if (!validation.valid) {
               throw new McpError(
@@ -133,7 +133,7 @@ app.post("/", async (req, res) => {
             logger.taskStart("lint", options);
             const startTime = Date.now();
 
-            const result = await orchestrateTask(TaskType.LintFix, options);
+            const result = await orchestrateTask(TaskType.Lint, options);
 
             const duration = Date.now() - startTime;
             logger.taskComplete("lint", result.success, duration);
