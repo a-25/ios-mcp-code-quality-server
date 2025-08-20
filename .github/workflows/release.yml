@@ -70,4 +70,11 @@ jobs:
         upload_url: ${{ github.event.release.upload_url }}
         asset_path: ./ios-mcp-code-quality-server-${{ github.event.release.tag_name }}.tar.gz
         asset_name: ios-mcp-code-quality-server-${{ github.event.release.tag_name }}.tar.gz
-        asset_content_type: application/gzip
+    - name: Upload release asset with GitHub CLI
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload "${{ github.event.release.tag_name }}" \
+          ./ios-mcp-code-quality-server-${{ github.event.release.tag_name }}.tar.gz \
+          --repo "${{ github.repository }}" \
+          --clobber
