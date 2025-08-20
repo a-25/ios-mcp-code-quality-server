@@ -283,7 +283,7 @@ This repository includes automated deployment and continuous integration workflo
 
 The repository automatically runs tests on all pull requests and commits to the main branch:
 
-- **Pull Request Testing**: Every PR triggers automated tests on Node.js 18 and 20
+- **Pull Request Testing**: Every PR triggers automated tests on Node.js 20
 - **Build Verification**: Ensures TypeScript compilation succeeds
 - **Test Suite Execution**: All 19 tests must pass before PRs can be merged
 - **Server Startup Check**: Verifies the built server can start successfully
