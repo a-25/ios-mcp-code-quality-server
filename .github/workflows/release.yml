@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build project
+      run: npm run build
+      
+    - name: Run tests
+      run: npm test
+      
+    - name: Create release package
+      run: |
+        # Create a clean distribution directory
+        mkdir -p release-dist
+        
+        # Copy built files
+        cp -r dist/ release-dist/
+        
+        # Copy essential files
+        cp package.json release-dist/
+        cp package-lock.json release-dist/
+        cp README.md release-dist/
+        cp LICENSE release-dist/
+        
+        # Create installation script
+        cat > release-dist/install.sh << 'EOF'
+        #!/bin/bash
+        echo "Installing iOS MCP Code Quality Server..."
+        npm ci --production
+        echo "Installation complete!"
+        echo "Start the server with: ./start.sh"
+        EOF
+        chmod +x release-dist/install.sh
+        
+        # Create start script
+        cat > release-dist/start.sh << 'EOF'
+        #!/bin/bash
+        echo "Starting iOS MCP Code Quality Server..."
+        node dist/index.js
+        EOF
+        chmod +x release-dist/start.sh
+        
+        # Create archive
+        tar -czf ios-mcp-code-quality-server-${{ github.event.release.tag_name }}.tar.gz -C release-dist .
+        
+    - name: Upload release asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./ios-mcp-code-quality-server-${{ github.event.release.tag_name }}.tar.gz
+        asset_name: ios-mcp-code-quality-server-${{ github.event.release.tag_name }}.tar.gz
+    - name: Upload release asset with GitHub CLI
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload "${{ github.event.release.tag_name }}" \
+          ./ios-mcp-code-quality-server-${{ github.event.release.tag_name }}.tar.gz \
+          --repo "${{ github.repository }}" \
+          --clobber

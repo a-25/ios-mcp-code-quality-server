@@ -121,3 +121,6 @@ vite.config.ts.timestamp-*
 
 # artifacts
 *.xcresult
+.mcp-artifacts/
+release-dist/
+test-release/
