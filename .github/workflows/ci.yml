@@ -39,6 +39,6 @@ jobs:
       
     - name: Verify server starts
       run: |
-        timeout 10s npm run start:prod &
+        timeout 10s npm start &
         sleep 5
         echo "Server start verification completed"
