@@ -275,6 +275,57 @@ npm run type-check
 npm run build
 ```
 
+## Deployment & CI/CD
+
+This repository includes automated deployment and continuous integration workflows:
+
+### Continuous Integration
+
+The repository automatically runs tests on all pull requests and commits to the main branch:
+
+- **Pull Request Testing**: Every PR triggers automated tests on Node.js 20
+- **Build Verification**: Ensures TypeScript compilation succeeds
+- **Test Suite Execution**: All 19 tests must pass before PRs can be merged
+- **Server Startup Check**: Verifies the built server can start successfully
+
+Test failures will block pull request merging, ensuring code quality.
+
+### Release Automation
+
+When a new release is created on GitHub:
+
+1. **Automated Build**: The release workflow builds the project from source
+2. **Test Validation**: Runs the full test suite to ensure release quality
+3. **Artifact Creation**: Packages the distributable with:
+   - Built JavaScript files (`dist/` directory)
+   - Essential files (`package.json`, `README.md`, `LICENSE`)
+   - Installation script (`install.sh`)
+   - Startup script (`start.sh`)
+4. **Release Attachment**: Automatically attaches the packaged artifact to the GitHub release
+
+### Deployment Package
+
+Release artifacts include everything needed to run the server:
+
+```bash
+# Extract the release package
+tar -xzf ios-mcp-code-quality-server-v1.0.0.tar.gz
+cd extracted-directory
+
+# Install dependencies
+./install.sh
+
+# Start the server
+./start.sh
+# OR manually: node dist/index.js
+```
+
+### Workflow Files
+
+- `.github/workflows/ci.yml` - Continuous integration and PR testing
+- `.github/workflows/pr-check.yml` - PR status checks
+- `.github/workflows/release.yml` - Release automation and artifact creation
+
 ## Contributing
 
 We welcome contributions! Please follow these steps:
