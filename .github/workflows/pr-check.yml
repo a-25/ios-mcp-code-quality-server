@@ -25,15 +25,6 @@ jobs:
     - name: Build project
       run: npm run build
       
-    - name: Run tests
-      run: npm test
-      
-    - name: Test status
-      run: |
-        if [ $? -eq 0 ]; then
-          echo "✅ All tests passed - PR is ready for review"
-        else
-          echo "❌ Tests failed - PR blocked"
     - name: Test status
       run: |
         npm test
