@@ -12,6 +12,8 @@ interface RateLimitStore {
 
 const store: RateLimitStore = {};
 
+// DNS rebinding protection best practice
+// Goal: Prevent malicious websites from accessing localhost services via DNS rebinding attacks
 // Clean up old rate limit entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
@@ -70,6 +72,24 @@ export const requestLoggingMiddleware = (req: Request, res: Response, next: Next
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     logger.request(req.method, req.url, sessionId, duration);
   });
+
+  next();
+};
+
+export const hostValidationMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const host = req.get("host");
+  
+  if (!host || !env.ALLOWED_HOSTS_LIST.includes(host)) {
+    logger.security("Invalid host header", { host, allowedHosts: env.ALLOWED_HOSTS_LIST });
+    return res.status(403).json({
+      jsonrpc: "2.0",
+      error: {
+        code: McpErrorCode.INVALID_REQUEST,
+        message: "Forbidden: Invalid host header"
+      },
+      id: null
+    });
+  }
 
   next();
 };

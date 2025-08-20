@@ -10,13 +10,14 @@ import { validateTestFixOptions, validateLintFixOptions, TestFixOptions, LintFix
 import type { TaskResult } from "./core/taskOrchestrator.js";
 import { env } from "./config/environment.js";
 import { logger } from "./utils/logger.js";
-import { rateLimitMiddleware, securityHeadersMiddleware, requestLoggingMiddleware } from "./middleware/security.js";
+import { rateLimitMiddleware, securityHeadersMiddleware, requestLoggingMiddleware, hostValidationMiddleware } from "./middleware/security.js";
 import { createMcpErrorResponse, McpError, McpErrorCode, handleAsyncError } from "./utils/errorHandling.js";
 import { healthCheckHandler } from "./utils/health.js";
 
 const app = express();
 app.use(express.json());
 app.use(securityHeadersMiddleware);
+app.use(hostValidationMiddleware);
 app.use(rateLimitMiddleware);
 app.use(requestLoggingMiddleware);
 
