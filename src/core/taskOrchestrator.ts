@@ -5,7 +5,7 @@ export type TaskResult<T> =
   | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
 import PQueue from "p-queue";
 import { runTestsAndParseFailures } from "./testRunner.js";
-import { runSwiftLintFix, checkSwiftLintInstallation, runSwiftLintOnCodeChanges, type SwiftLintResult } from "./swiftLint.js";
+import { checkSwiftLintInstallation, runSwiftLintOnChangedFiles, type SwiftLintResult } from "./swiftLint.js";
 import { exec } from "child_process";
 import util from "util";
 import { TestFixOptions, LintFixOptions } from "./taskOptions.js";
@@ -73,9 +73,9 @@ export async function handleLintFix(options: LintFixOptions): Promise<TaskResult
   try {
     let result: SwiftLintResult;
     
-    // Lint the provided code file changes
-    console.log("[MCP] Linting code file changes");
-    result = await runSwiftLintOnCodeChanges(options.codeFileChanges, options.configPath);
+    // Lint the provided changed files
+    console.log("[MCP] Linting changed files");
+    result = await runSwiftLintOnChangedFiles(options.changedFiles, options.configPath);
     
     if (!result.success) {
       return { 

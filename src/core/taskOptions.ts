@@ -10,11 +10,14 @@ export interface TestFixOptions {
 }
 
 export interface LintFixOptions {
-  codeFileChanges: CodeFileChange[];
+  /**
+   * List of file paths that have been changed and should be linted.
+   * These should be relative paths from the project root.
+   * Hint: You can extract changed files using `git diff --name-status` command.
+   */
+  changedFiles: string[];
   configPath?: string;
 }
-
-import type { CodeFileChange } from './swiftLint.js';
 
 export function validateTestFixOptions(options: Partial<TestFixOptions>): ValidationResult {
   if (!options.xcodeproj && !options.xcworkspace) {
@@ -27,18 +30,15 @@ export function validateTestFixOptions(options: Partial<TestFixOptions>): Valida
 }
 
 export function validateLintFixOptions(options: Partial<LintFixOptions>): ValidationResult {
-  // For LintFix, we require codeFileChanges array
-  if (!options.codeFileChanges || !Array.isArray(options.codeFileChanges) || options.codeFileChanges.length === 0) {
-    return { valid: false, error: "codeFileChanges array must be provided and non-empty for linting" };
+  // For LintFix, we require changedFiles array
+  if (!options.changedFiles || !Array.isArray(options.changedFiles) || options.changedFiles.length === 0) {
+    return { valid: false, error: "changedFiles array must be provided and non-empty for linting" };
   }
   
-  // Validate each code file change has required fields
-  for (const codeChange of options.codeFileChanges) {
-    if (!codeChange.name || typeof codeChange.name !== 'string') {
-      return { valid: false, error: "Each code file change must have a valid 'name' field" };
-    }
-    if (!codeChange.changes || typeof codeChange.changes !== 'string') {
-      return { valid: false, error: "Each code file change must have a valid 'changes' field" };
+  // Validate each file path is a non-empty string
+  for (const filePath of options.changedFiles) {
+    if (!filePath || typeof filePath !== 'string') {
+      return { valid: false, error: "Each file path in changedFiles must be a valid non-empty string" };
     }
   }
   

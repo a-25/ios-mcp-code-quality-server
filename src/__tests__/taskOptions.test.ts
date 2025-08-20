@@ -2,11 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { validateLintFixOptions, type LintFixOptions } from '../core/taskOptions.js';
 
 describe('validateLintFixOptions', () => {
-  it('should be valid when codeFileChanges array is provided', () => {
+  it('should be valid when changedFiles array is provided', () => {
     const options: LintFixOptions = {
-      codeFileChanges: [
-        { name: 'test.swift', changes: 'func test() { print("hello") }' }
-      ]
+      changedFiles: ['test.swift']
     };
 
     const result = validateLintFixOptions(options);
@@ -15,12 +13,9 @@ describe('validateLintFixOptions', () => {
     expect(result.error).toBeUndefined();
   });
 
-  it('should be valid when multiple codeFileChanges are provided', () => {
+  it('should be valid when multiple changedFiles are provided', () => {
     const options: LintFixOptions = {
-      codeFileChanges: [
-        { name: 'test1.swift', changes: 'func test1() {}' },
-        { name: 'test2.swift', changes: 'func test2() {}' }
-      ]
+      changedFiles: ['test1.swift', 'test2.swift']
     };
 
     const result = validateLintFixOptions(options);
@@ -29,11 +24,9 @@ describe('validateLintFixOptions', () => {
     expect(result.error).toBeUndefined();
   });
 
-  it('should be valid when codeFileChanges and configPath are provided', () => {
+  it('should be valid when changedFiles and configPath are provided', () => {
     const options: LintFixOptions = {
-      codeFileChanges: [
-        { name: 'test.swift', changes: 'func test() {}' }
-      ],
+      changedFiles: ['test.swift'],
       configPath: '/config/.swiftlint.yml'
     };
 
@@ -43,26 +36,26 @@ describe('validateLintFixOptions', () => {
     expect(result.error).toBeUndefined();
   });
 
-  it('should be invalid when codeFileChanges is empty', () => {
+  it('should be invalid when changedFiles is empty', () => {
     const options: LintFixOptions = {
-      codeFileChanges: []
+      changedFiles: []
     };
 
     const result = validateLintFixOptions(options);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('codeFileChanges array must be provided and non-empty for linting');
+    expect(result.error).toBe('changedFiles array must be provided and non-empty for linting');
   });
 
-  it('should be invalid when codeFileChanges is not provided', () => {
+  it('should be invalid when changedFiles is not provided', () => {
     const options: Partial<LintFixOptions> = {
-      configPath: '/config/.swiftlint.yml' // Only config, no code changes
+      configPath: '/config/.swiftlint.yml' // Only config, no changed files
     };
 
     const result = validateLintFixOptions(options);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('codeFileChanges array must be provided and non-empty for linting');
+    expect(result.error).toBe('changedFiles array must be provided and non-empty for linting');
   });
 
   it('should be invalid when completely empty', () => {
@@ -71,58 +64,39 @@ describe('validateLintFixOptions', () => {
     const result = validateLintFixOptions(options);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('codeFileChanges array must be provided and non-empty for linting');
+    expect(result.error).toBe('changedFiles array must be provided and non-empty for linting');
   });
 
-  it('should be invalid when codeFileChanges has invalid structure', () => {
+  it('should be invalid when changedFiles has empty string', () => {
     const options: any = {
-      codeFileChanges: [
-        { name: 'test.swift' } // Missing 'changes' field
-      ]
+      changedFiles: [''] // Empty file path
     };
 
     const result = validateLintFixOptions(options);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe("Each code file change must have a valid 'changes' field");
+    expect(result.error).toBe("Each file path in changedFiles must be a valid non-empty string");
   });
 
-  it('should be invalid when codeFileChanges missing name field', () => {
+  it('should be invalid when changedFiles has non-string value', () => {
     const options: any = {
-      codeFileChanges: [
-        { changes: 'func test() {}' } // Missing 'name' field
-      ]
+      changedFiles: [123] // Invalid file path type
     };
 
     const result = validateLintFixOptions(options);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe("Each code file change must have a valid 'name' field");
+    expect(result.error).toBe("Each file path in changedFiles must be a valid non-empty string");
   });
 
-  it('should be invalid when codeFileChanges has non-string name', () => {
+  it('should be invalid when changedFiles has null value', () => {
     const options: any = {
-      codeFileChanges: [
-        { name: 123, changes: 'func test() {}' } // Invalid name type
-      ]
+      changedFiles: [null] // Invalid file path value
     };
 
     const result = validateLintFixOptions(options);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe("Each code file change must have a valid 'name' field");
-  });
-
-  it('should be invalid when codeFileChanges has non-string changes', () => {
-    const options: any = {
-      codeFileChanges: [
-        { name: 'test.swift', changes: 123 } // Invalid changes type
-      ]
-    };
-
-    const result = validateLintFixOptions(options);
-
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe("Each code file change must have a valid 'changes' field");
+    expect(result.error).toBe("Each file path in changedFiles must be a valid non-empty string");
   });
 });

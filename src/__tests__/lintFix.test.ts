@@ -5,12 +5,12 @@ import type { LintFixOptions } from '../core/taskOptions.js';
 // Mock the SwiftLint module
 vi.mock('../core/swiftLint.js', () => ({
   checkSwiftLintInstallation: vi.fn(),
-  runSwiftLintOnCodeChanges: vi.fn(),
+  runSwiftLintOnChangedFiles: vi.fn(),
 }));
 
 import { 
   checkSwiftLintInstallation, 
-  runSwiftLintOnCodeChanges 
+  runSwiftLintOnChangedFiles 
 } from '../core/swiftLint.js';
 
 describe('handleLintFix', () => {
@@ -26,7 +26,7 @@ describe('handleLintFix', () => {
       });
 
       const options: LintFixOptions = { 
-        codeFileChanges: [{ name: 'test.swift', changes: 'func test() {}' }] 
+        changedFiles: ['test.swift'] 
       };
       const result = await handleLintFix(options);
 
@@ -40,14 +40,14 @@ describe('handleLintFix', () => {
         installed: true,
         version: '0.50.3'
       });
-      (runSwiftLintOnCodeChanges as any).mockResolvedValue({
+      (runSwiftLintOnChangedFiles as any).mockResolvedValue({
         success: true,
         warnings: [],
         output: 'No issues found'
       });
 
       const options: LintFixOptions = { 
-        codeFileChanges: [{ name: 'test.swift', changes: 'func test() {}' }] 
+        changedFiles: ['test.swift'] 
       };
       const result = await handleLintFix(options);
 
@@ -56,7 +56,7 @@ describe('handleLintFix', () => {
     });
   });
 
-  describe('Code Changes Linting', () => {
+  describe('Changed Files Linting', () => {
     beforeEach(() => {
       (checkSwiftLintInstallation as any).mockResolvedValue({
         installed: true,
@@ -64,7 +64,7 @@ describe('handleLintFix', () => {
       });
     });
 
-    it('should lint code file changes when provided', async () => {
+    it('should lint changed files when provided', async () => {
       const mockLintResult = {
         success: true,
         warnings: [
@@ -79,22 +79,17 @@ describe('handleLintFix', () => {
         ],
         output: 'Found 1 warning'
       };
-      (runSwiftLintOnCodeChanges as any).mockResolvedValue(mockLintResult);
+      (runSwiftLintOnChangedFiles as any).mockResolvedValue(mockLintResult);
 
       const options: LintFixOptions = {
-        codeFileChanges: [
-          { 
-            name: 'LongNamedFile.swift',
-            changes: 'func veryLongFunctionNameThatExceedsTheRecommendedLineLengthLimitForSwiftCode() { print("test") }'
-          }
-        ],
+        changedFiles: ['LongNamedFile.swift'],
         configPath: '/config/.swiftlint.yml'
       };
 
       const result = await handleLintFix(options);
 
-      expect(runSwiftLintOnCodeChanges).toHaveBeenCalledWith(
-        options.codeFileChanges,
+      expect(runSwiftLintOnChangedFiles).toHaveBeenCalledWith(
+        options.changedFiles,
         options.configPath
       );
       expect(result.success).toBe(true);
@@ -103,37 +98,33 @@ describe('handleLintFix', () => {
 
     it('should handle single config path', async () => {
       const mockLintResult = { success: true, warnings: [], output: '' };
-      (runSwiftLintOnCodeChanges as any).mockResolvedValue(mockLintResult);
+      (runSwiftLintOnChangedFiles as any).mockResolvedValue(mockLintResult);
 
       const options: LintFixOptions = {
-        codeFileChanges: [{ name: 'test.swift', changes: 'func test() {}' }],
+        changedFiles: ['test.swift'],
         configPath: '/config/.swiftlint.yml'
       };
 
       await handleLintFix(options);
 
-      expect(runSwiftLintOnCodeChanges).toHaveBeenCalledWith(
-        options.codeFileChanges,
+      expect(runSwiftLintOnChangedFiles).toHaveBeenCalledWith(
+        options.changedFiles,
         '/config/.swiftlint.yml'
       );
     });
 
-    it('should handle multiple code file changes', async () => {
+    it('should handle multiple changed files', async () => {
       const mockLintResult = { success: true, warnings: [], output: '' };
-      (runSwiftLintOnCodeChanges as any).mockResolvedValue(mockLintResult);
+      (runSwiftLintOnChangedFiles as any).mockResolvedValue(mockLintResult);
 
       const options: LintFixOptions = {
-        codeFileChanges: [
-          { name: 'File1.swift', changes: 'func test1() {}' },
-          { name: 'File2.swift', changes: 'func test2() {}' },
-          { name: 'File3.swift', changes: 'func test3() {}' }
-        ]
+        changedFiles: ['File1.swift', 'File2.swift', 'File3.swift']
       };
 
       await handleLintFix(options);
 
-      expect(runSwiftLintOnCodeChanges).toHaveBeenCalledWith(
-        options.codeFileChanges,
+      expect(runSwiftLintOnChangedFiles).toHaveBeenCalledWith(
+        options.changedFiles,
         undefined
       );
     });
@@ -148,7 +139,7 @@ describe('handleLintFix', () => {
     });
 
     it('should return error when SwiftLint execution fails', async () => {
-      (runSwiftLintOnCodeChanges as any).mockResolvedValue({
+      (runSwiftLintOnChangedFiles as any).mockResolvedValue({
         success: false,
         error: 'SwiftLint crashed',
         warnings: [],
@@ -156,7 +147,7 @@ describe('handleLintFix', () => {
       });
 
       const options: LintFixOptions = { 
-        codeFileChanges: [{ name: 'test.swift', changes: 'func test() {}' }] 
+        changedFiles: ['test.swift'] 
       };
       const result = await handleLintFix(options);
 
@@ -167,10 +158,10 @@ describe('handleLintFix', () => {
 
     it('should handle unexpected errors during processing', async () => {
       const error = new Error('Unexpected processing error');
-      (runSwiftLintOnCodeChanges as any).mockRejectedValue(error);
+      (runSwiftLintOnChangedFiles as any).mockRejectedValue(error);
 
       const options: LintFixOptions = { 
-        codeFileChanges: [{ name: 'test.swift', changes: 'func test() {}' }] 
+        changedFiles: ['test.swift'] 
       };
       const result = await handleLintFix(options);
 
@@ -210,10 +201,10 @@ describe('handleLintFix', () => {
         ],
         output: 'Found 2 violations'
       };
-      (runSwiftLintOnCodeChanges as any).mockResolvedValue(mockLintResult);
+      (runSwiftLintOnChangedFiles as any).mockResolvedValue(mockLintResult);
 
       const options: LintFixOptions = { 
-        codeFileChanges: [{ name: 'TestFile.swift', changes: 'func test() { let Bad_Name = 5 }' }] 
+        changedFiles: ['TestFile.swift'] 
       };
       const result = await handleLintFix(options);
 
@@ -228,10 +219,10 @@ describe('handleLintFix', () => {
         warnings: [],
         output: 'No violations found'
       };
-      (runSwiftLintOnCodeChanges as any).mockResolvedValue(mockLintResult);
+      (runSwiftLintOnChangedFiles as any).mockResolvedValue(mockLintResult);
 
       const options: LintFixOptions = { 
-        codeFileChanges: [{ name: 'test.swift', changes: 'func test() { print("Hello") }' }]
+        changedFiles: ['test.swift']
       };
       const result = await handleLintFix(options);
 
