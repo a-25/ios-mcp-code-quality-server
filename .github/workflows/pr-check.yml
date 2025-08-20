@@ -34,5 +34,13 @@ jobs:
           echo "✅ All tests passed - PR is ready for review"
         else
           echo "❌ Tests failed - PR blocked"
-          exit 1
+    - name: Test status
+      run: |
+        npm test
+        TEST_EXIT_CODE=$?
+        if [ $TEST_EXIT_CODE -eq 0 ]; then
+          echo "✅ All tests passed - PR is ready for review"
+        else
+          echo "❌ Tests failed - PR blocked"
+          exit $TEST_EXIT_CODE
         fi
