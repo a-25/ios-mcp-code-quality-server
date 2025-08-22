@@ -1,5 +1,96 @@
 import { describe, it, expect } from 'vitest';
-import { validateLintFixOptions, type LintFixOptions } from '../core/taskOptions.js';
+import { validateLintFixOptions, validateTestFixOptions, type LintFixOptions, type TestFixOptions } from '../core/taskOptions.js';
+
+describe('validateTestFixOptions', () => {
+  it('should be valid for basic test options', () => {
+    const options: TestFixOptions = {
+      scheme: 'TestScheme',
+      xcodeproj: 'Test.xcodeproj'
+    };
+
+    const result = validateTestFixOptions(options);
+
+    expect(result.valid).toBe(true);
+    expect(result.error).toBeUndefined();
+  });
+
+  it('should be valid with UI test type', () => {
+    const options: TestFixOptions = {
+      scheme: 'TestScheme',
+      xcworkspace: 'Test.xcworkspace',
+      testType: 'ui',
+      includeScreenshots: true
+    };
+
+    const result = validateTestFixOptions(options);
+
+    expect(result.valid).toBe(true);
+    expect(result.error).toBeUndefined();
+  });
+
+  it('should be valid with unit test type and test target', () => {
+    const options: TestFixOptions = {
+      scheme: 'TestScheme',
+      xcodeproj: 'Test.xcodeproj',
+      testType: 'unit',
+      testTarget: 'MyAppTests'
+    };
+
+    const result = validateTestFixOptions(options);
+
+    expect(result.valid).toBe(true);
+    expect(result.error).toBeUndefined();
+  });
+
+  it('should be valid with all test types', () => {
+    const options: TestFixOptions = {
+      scheme: 'TestScheme',
+      xcworkspace: 'Test.xcworkspace',
+      testType: 'all',
+      destination: 'platform=iOS Simulator,name=iPhone 15'
+    };
+
+    const result = validateTestFixOptions(options);
+
+    expect(result.valid).toBe(true);
+    expect(result.error).toBeUndefined();
+  });
+
+  it('should be invalid with invalid test type', () => {
+    const options: Partial<TestFixOptions> = {
+      scheme: 'TestScheme',
+      xcodeproj: 'Test.xcodeproj',
+      testType: 'invalid' as any
+    };
+
+    const result = validateTestFixOptions(options);
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe("testType must be one of: 'unit', 'ui', or 'all'");
+  });
+
+  it('should be invalid without scheme', () => {
+    const options: Partial<TestFixOptions> = {
+      xcodeproj: 'Test.xcodeproj'
+    };
+
+    const result = validateTestFixOptions(options);
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe("Scheme must be provided for test-fix");
+  });
+
+  it('should be invalid without project or workspace', () => {
+    const options: Partial<TestFixOptions> = {
+      scheme: 'TestScheme'
+    };
+
+    const result = validateTestFixOptions(options);
+
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe("Either xcodeproj or xcworkspace must be provided");
+  });
+});
 
 describe('validateLintFixOptions', () => {
   it('should be valid when changedFiles array is provided', () => {

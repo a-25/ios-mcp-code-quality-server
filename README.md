@@ -22,10 +22,12 @@ The server will start on `http://localhost:3000` and be ready to receive MCP req
 
 ## Features
 
-- **🧪 iOS Test Execution**: Run Xcode tests with detailed failure analysis
+- **🧪 iOS Test Execution**: Run both unit tests and UI tests with detailed failure analysis
+- **🎯 Test Type Selection**: Choose between unit tests, UI tests, or both
 - **📱 Multiple Schemes Support**: Test different iOS project configurations  
 - **🔍 SwiftLint Integration**: Automated Swift code style and quality checking
-- **📊 Structured Reporting**: Clear, actionable feedback with file locations and line numbers
+- **📊 Enhanced UI Test Reporting**: Screenshots, element paths, and timeout analysis for UI test failures
+- **📈 Structured Reporting**: Clear, actionable feedback with file locations and line numbers
 - **🛠 Build Error Detection**: Intelligent parsing of Xcode build failures
 - **🔒 Local Processing**: All analysis happens on your machine for security
 - **⚡ Fast Results**: Optimized for quick feedback cycles
@@ -97,7 +99,7 @@ npm start
 ## Tools & Capabilities
 
 ### Test Tool
-Executes iOS tests and provides detailed failure analysis.
+Executes iOS tests (unit tests and/or UI tests) and provides detailed failure analysis with enhanced context for UI test failures.
 
 **Parameters:**
 - `xcodeproj` (optional): Path to Xcode project file
@@ -106,6 +108,19 @@ Executes iOS tests and provides detailed failure analysis.
 - `scheme` (required): Xcode scheme to test
 - `destination` (optional): Test destination (simulator/device)
   - Default value: `generic/platform=iOS Simulator`
+- `testType` (optional): Type of tests to run (`'unit'`, `'ui'`, or `'all'`)
+  - Default: runs all available tests
+- `testTarget` (optional): Specific test target to run (e.g., `"MyAppUITests"`)
+- `includeScreenshots` (optional): Include screenshot attachments for UI test failures
+
+**Enhanced UI Test Support:**
+The server now provides comprehensive support for UI tests with:
+- **Automatic Detection**: Identifies UI tests vs unit tests automatically
+- **Rich Context**: Parses element identifiers, XPaths, and timeout information
+- **Screenshot Analysis**: Captures and references failure screenshots
+- **Detailed Reporting**: Enhanced error messages with UI-specific debugging information
+
+See [UI_TEST_SUPPORT.md](UI_TEST_SUPPORT.md) for detailed documentation.
 
 **Example Responses:**
 
@@ -168,7 +183,10 @@ Main MCP endpoint for tool execution requests.
     "arguments": {
       "xcodeproj": "MyApp.xcodeproj",
       "scheme": "MyApp",
-      "destination": "platform=iOS Simulator,name=iPhone 15"
+      "destination": "platform=iOS Simulator,name=iPhone 15",
+      "testType": "ui",
+      "testTarget": "MyAppUITests",
+      "includeScreenshots": true
     }
   }
 }
@@ -180,14 +198,23 @@ Main MCP endpoint for tool execution requests.
 ### Running Tests with AI Assistant
 
 ```
-"Can you run the tests for the LoginFeature scheme and tell me what failed?"
+"Can you run the UI tests for the LoginFeature scheme and tell me what failed?"
 ```
 
 The AI assistant will use the test tool to:
-1. Execute tests for the specified scheme
-2. Parse build and test results
-3. Provide a structured summary of failures
-4. Highlight specific files and line numbers that need attention
+1. Execute UI tests for the specified scheme
+2. Parse build and test results with enhanced UI test context
+3. Provide a structured summary of failures including screenshots and element information
+4. Highlight specific files, line numbers, and UI elements that need attention
+
+```
+"Run only the unit tests for quick feedback"
+```
+
+Or for comprehensive analysis:
+```
+"Run all tests and provide detailed analysis of any UI test failures with screenshots"
+```
 
 ### Code Quality Analysis
 

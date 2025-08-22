@@ -31,11 +31,48 @@ export function formatTestResultResponse(
       contextText += '\nTest failures:\n' + result.testFailures
         .map((f: any) => {
           let details = '- ' + (f.testIdentifier || '');
+          if (f.testType) details += ` [${f.testType.toUpperCase()} TEST]`;
           if (f.suiteName) details += '\n  Suite: ' + f.suiteName;
           if (f.file) details += '\n  File: ' + f.file;
           if (f.line) details += '\n  Line: ' + f.line;
           if (f.message) details += '\n  Message: ' + f.message;
           if (f.stack) details += '\n  Stack: ' + f.stack;
+          
+          // Add UI-specific context
+          if (f.uiContext) {
+            if (f.uiContext.elementIdentifier) {
+              details += '\n  UI Element: ' + f.uiContext.elementIdentifier;
+            }
+            if (f.uiContext.elementPath) {
+              details += '\n  Element Path: ' + f.uiContext.elementPath;
+            }
+            if (f.uiContext.timeoutDuration) {
+              details += '\n  Timeout: ' + f.uiContext.timeoutDuration + ' seconds';
+            }
+            if (f.uiContext.isElementNotFound) {
+              details += '\n  Issue Type: Element not found';
+            } else if (f.uiContext.isTimeoutError) {
+              details += '\n  Issue Type: Timeout error';
+            }
+          }
+          
+          // Add attachment information
+          if (f.attachments && f.attachments.length > 0) {
+            const screenshots = f.attachments.filter((a: any) => a.type === 'screenshot');
+            const hierarchies = f.attachments.filter((a: any) => a.type === 'hierarchy');
+            const others = f.attachments.filter((a: any) => a.type === 'other');
+            
+            if (screenshots.length > 0) {
+              details += '\n  Screenshots: ' + screenshots.map((s: any) => s.filename).join(', ');
+            }
+            if (hierarchies.length > 0) {
+              details += '\n  Hierarchy Dumps: ' + hierarchies.map((h: any) => h.filename).join(', ');
+            }
+            if (others.length > 0) {
+              details += '\n  Other Attachments: ' + others.map((o: any) => o.filename).join(', ');
+            }
+          }
+          
           return details;
         })
         .join('\n');
@@ -91,7 +128,10 @@ export function formatTestResultResponse(
         content: [
           {
             type: 'text',
-            text: 'Test failures:\n\n' + result.testFailures.map((f: any) => '- ' + f.testIdentifier + ': ' + (f.message || '')).join('\n') + '\n\nFull error JSON:\n' + JSON.stringify(result, null, 2),
+            text: 'Test failures:\n\n' + result.testFailures.map((f: any) => {
+              const typeLabel = f.testType ? `[${f.testType.toUpperCase()}] ` : '';
+              return `- ${typeLabel}${f.testIdentifier}: ${f.message || ''}`;
+            }).join('\n') + '\n\nFull error JSON:\n' + JSON.stringify(result, null, 2),
             _meta: undefined
           },
         ],
