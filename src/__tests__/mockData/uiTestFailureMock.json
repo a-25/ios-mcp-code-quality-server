@@ -1,0 +1,142 @@
+{
+  "_type": {
+    "_name": "ActionsInvocationRecord"
+  },
+  "actions": {
+    "_type": {
+      "_name": "Array"
+    },
+    "_values": [
+      {
+        "_type": {
+          "_name": "ActionRecord"
+        },
+        "actionResult": {
+          "_type": {
+            "_name": "ActionResult"
+          },
+          "issues": {
+            "_type": {
+              "_name": "ResultIssueSummaries"
+            },
+            "testFailureSummaries": {
+              "_type": {
+                "_name": "Array"
+              },
+              "_values": [
+                {
+                  "_type": {
+                    "_name": "TestFailureIssueSummary",
+                    "_supertype": {
+                      "_name": "IssueSummary"
+                    }
+                  },
+                  "documentLocationInCreatingWorkspace": {
+                    "_type": {
+                      "_name": "DocumentLocation"
+                    },
+                    "concreteTypeName": {
+                      "_type": {
+                        "_name": "String"
+                      },
+                      "_value": "DVTTextDocumentLocation"
+                    },
+                    "url": {
+                      "_type": {
+                        "_name": "String"
+                      },
+                      "_value": "file:///Users/user/Projects/TestProject/TestProjectUITests/TestProjectUITests.swift#EndingLineNumber=45&StartingLineNumber=45"
+                    }
+                  },
+                  "issueType": {
+                    "_type": {
+                      "_name": "String"
+                    },
+                    "_value": "Uncategorized"
+                  },
+                  "message": {
+                    "_type": {
+                      "_name": "String"
+                    },
+                    "_value": "UI Testing Failure - No matches found for find: Elements matching predicate '(identifier == \"loginButton\")' at Path /XCUIElementTypeApplication[@name=\"TestApp\"]/XCUIElementTypeWindow[1]/XCUIElementTypeOther[1]/XCUIElementTypeButton[@name=\"loginButton\"]"
+                  },
+                  "testCaseName": {
+                    "_type": {
+                      "_name": "String"
+                    },
+                    "_value": "TestProjectUITests.testLoginFlow()"
+                  }
+                },
+                {
+                  "_type": {
+                    "_name": "TestFailureIssueSummary",
+                    "_supertype": {
+                      "_name": "IssueSummary"
+                    }
+                  },
+                  "documentLocationInCreatingWorkspace": {
+                    "_type": {
+                      "_name": "DocumentLocation"
+                    },
+                    "concreteTypeName": {
+                      "_type": {
+                      "_name": "String"
+                      },
+                      "_value": "DVTTextDocumentLocation"
+                    },
+                    "url": {
+                      "_type": {
+                        "_name": "String"
+                      },
+                      "_value": "file:///Users/user/Projects/TestProject/TestProjectUITests/TestProjectUITests.swift#EndingLineNumber=52&StartingLineNumber=52"
+                    }
+                  },
+                  "issueType": {
+                    "_type": {
+                      "_name": "String"
+                    },
+                    "_value": "Uncategorized"
+                  },
+                  "message": {
+                    "_type": {
+                      "_name": "String"
+                    },
+                    "_value": "Assertion failed: Element exists timeout exceeded. Failed to find element with identifier 'welcomeLabel' within 5.0 seconds."
+                  },
+                  "testCaseName": {
+                    "_type": {
+                      "_name": "String"
+                    },
+                    "_value": "TestProjectUITests.testWelcomeScreen()"
+                  }
+                }
+              ]
+            }
+          },
+          "testsRef": {
+            "_type": {
+              "_name": "Reference"
+            },
+            "id": {
+              "_type": {
+                "_name": "String"
+              },
+              "_value": "0~UITestRef123"
+            },
+            "targetType": {
+              "_type": {
+                "_name": "TypeDefinition"
+              },
+              "name": {
+                "_type": {
+                  "_name": "String"
+                },
+                "_value": "ActionTestPlanRunSummaries"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

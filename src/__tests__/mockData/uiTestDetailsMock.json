@@ -1,0 +1,86 @@
+{
+  "summaries": {
+    "_values": [
+      {
+        "tests": {
+          "_values": [
+            {
+              "name": "TestProjectUITests",
+              "subtests": {
+                "_values": [
+                  {
+                    "identifier": "TestProjectUITests.testLoginFlow()",
+                    "name": "testLoginFlow()",
+                    "status": "Failure",
+                    "failureMessage": "UI Testing Failure - No matches found for find: Elements matching predicate '(identifier == \"loginButton\")'",
+                    "fileName": "/Users/user/Projects/TestProject/TestProjectUITests/TestProjectUITests.swift",
+                    "lineNumber": 45,
+                    "failureSummaries": {
+                      "_values": [
+                        {
+                          "message": "UI element not found after waiting 5.0 seconds. Screenshot saved."
+                        }
+                      ]
+                    },
+                    "attachments": {
+                      "_values": [
+                        {
+                          "filename": "screenshot_testLoginFlow_failure.png",
+                          "payloadRef": {
+                            "id": "screenshot_ref_123"
+                          },
+                          "lifetime": {
+                            "_value": "keepAlways"
+                          },
+                          "inActivityIdentifier": 1234567890
+                        },
+                        {
+                          "filename": "hierarchy_dump_testLoginFlow.txt",
+                          "payloadRef": {
+                            "id": "hierarchy_ref_123"
+                          },
+                          "lifetime": {
+                            "_value": "keepAlways"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "identifier": "TestProjectUITests.testWelcomeScreen()",
+                    "name": "testWelcomeScreen()",
+                    "status": "Failure",
+                    "failureMessage": "Assertion failed: Element exists timeout exceeded. Failed to find element with identifier 'welcomeLabel' within 5.0 seconds.",
+                    "fileName": "/Users/user/Projects/TestProject/TestProjectUITests/TestProjectUITests.swift",
+                    "lineNumber": 52,
+                    "failureSummaries": {
+                      "_values": [
+                        {
+                          "message": "Element with identifier 'welcomeLabel' not found within timeout period"
+                        }
+                      ]
+                    },
+                    "attachments": {
+                      "_values": [
+                        {
+                          "filename": "screenshot_testWelcomeScreen_failure.png",
+                          "payloadRef": {
+                            "id": "screenshot_ref_456"
+                          },
+                          "lifetime": {
+                            "_value": "keepAlways"
+                          },
+                          "inActivityIdentifier": 1234567891
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

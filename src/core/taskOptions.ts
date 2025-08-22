@@ -2,11 +2,16 @@ export interface ValidationResult {
   valid: boolean;
   error?: string;
 }
+export type TestType = 'unit' | 'ui' | 'all';
+
 export interface TestFixOptions {
   xcodeproj?: string;
   xcworkspace?: string;
   scheme: string;
   destination?: string;
+  testType?: TestType; // Specify the type of tests to run
+  testTarget?: string; // Specific test target (e.g., "MyAppUITests")
+  includeScreenshots?: boolean; // Whether to include screenshot attachments in results
 }
 
 export interface LintFixOptions {
@@ -26,6 +31,12 @@ export function validateTestFixOptions(options: Partial<TestFixOptions>): Valida
   if (!options.scheme) {
   return { valid: false, error: "Scheme must be provided for test-fix" };
   }
+  
+  // Validate testType if provided
+  if (options.testType && !['unit', 'ui', 'all'].includes(options.testType)) {
+    return { valid: false, error: "testType must be one of: 'unit', 'ui', or 'all'" };
+  }
+  
   return { valid: true };
 }
 
