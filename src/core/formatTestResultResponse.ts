@@ -9,136 +9,349 @@ export interface MCPContent {
   [key: string]: any;
 }
 
+// Enhanced response structure for AI agents
+export interface AIFriendlyTestResponse {
+  content: MCPContent[];
+  _meta?: {
+    structured?: {
+      status: 'success' | 'failure' | 'error';
+      summary?: {
+        totalFailures: number;
+        buildErrors: number;
+        categories: Record<string, number>;
+        priorities: {
+          critical: number;
+          high: number;
+          medium: number;
+          low: number;
+        };
+      };
+      failures?: Array<{
+        id: string;
+        test: string;
+        suite: string;
+        file?: string;
+        line?: number;
+        category: string;
+        severity: string;
+        message: string;
+        suggestions: string[];
+      }>;
+      buildErrors?: Array<{
+        type: 'build';
+        message: string;
+      }>;
+      actionable: {
+        nextSteps: string[];
+        suggestions: string[];
+        priority: 'fix_build' | 'fix_critical' | 'fix_tests' | 'all_good';
+      };
+      artifacts?: {
+        xcresultPath?: string;
+        logFiles?: string[];
+        screenshots?: string[];
+      };
+    };
+  };
+  [key: string]: unknown;
+}
+
+// Helper function to create AI-friendly structured response
+function createStructuredResponse(
+  status: 'success' | 'failure' | 'error',
+  textContent: string,
+  result?: TaskResult<string>
+): AIFriendlyTestResponse {
+  const response: AIFriendlyTestResponse = {
+    content: [{ type: 'text', text: textContent, _meta: undefined }],
+    _meta: {
+      structured: {
+        status,
+        actionable: {
+          nextSteps: [],
+          suggestions: [],
+          priority: 'all_good'
+        }
+      }
+    }
+  };
+
+  // Enhance with structured data if result contains TestRunResult
+  if (result && typeof result === 'object' && ('buildErrors' in result || 'testFailures' in result)) {
+    const testRunResult = result as any; // Type assertion for the enhanced result
+    
+    if (testRunResult.buildErrors || testRunResult.testFailures) {
+      const buildErrors = testRunResult.buildErrors || [];
+      const testFailures = testRunResult.testFailures || [];
+      
+      // Summary
+      const categories: Record<string, number> = {};
+      const priorities = { critical: 0, high: 0, medium: 0, low: 0 };
+      
+      testFailures.forEach((failure: any) => {
+        const category = failure.category || 'other';
+        const severity = failure.severity || 'medium';
+        categories[category] = (categories[category] || 0) + 1;
+        if (severity in priorities) {
+          priorities[severity as keyof typeof priorities]++;
+        }
+      });
+
+      response._meta!.structured!.summary = {
+        totalFailures: testFailures.length,
+        buildErrors: buildErrors.length,
+        categories,
+        priorities
+      };
+
+      // Failures
+      response._meta!.structured!.failures = testFailures.map((failure: any, index: number) => ({
+        id: `failure_${index}`,
+        test: failure.testIdentifier || 'UnknownTest',
+        suite: failure.suiteName || '',
+        file: failure.file,
+        line: failure.line,
+        category: failure.category || 'other',
+        severity: failure.severity || 'medium',
+        message: failure.message || '',
+        suggestions: failure.suggestions || []
+      }));
+
+      // Build errors
+      if (buildErrors.length > 0) {
+        response._meta!.structured!.buildErrors = buildErrors.map((error: string) => ({
+          type: 'build' as const,
+          message: error
+        }));
+      }
+
+      // Actionable items
+      response._meta!.structured!.actionable = {
+        nextSteps: testRunResult.nextSteps || [],
+        suggestions: testRunResult.suggestions || [],
+        priority: buildErrors.length > 0 ? 'fix_build' : 
+                 priorities.critical > 0 ? 'fix_critical' :
+                 testFailures.length > 0 ? 'fix_tests' : 'all_good'
+      };
+
+      // Artifacts
+      if (testRunResult.artifacts) {
+        response._meta!.structured!.artifacts = testRunResult.artifacts;
+      }
+    }
+  }
+
+  return response;
+}
+
 export function formatTestResultResponse(
   input: TestFixOptions,
   validation: import("./taskOptions.js").ValidationResult,
   result: TaskResult<string> | undefined
-): { content: MCPContent[]; _meta?: any } {
+): AIFriendlyTestResponse {
   if (!validation.valid) {
-    return {
-      content: [
-        { type: 'text', text: 'Error: ' + (validation.error || 'Unknown validation error'), _meta: undefined },
-      ],
-      _meta: undefined
-    };
+    return createStructuredResponse(
+      'error',
+      `❌ Input Validation Error: ${validation.error || 'Unknown validation error'}\n\n` +
+      'Please check your input parameters and try again.',
+      undefined
+    );
   }
+
   if (result && !result.success && result.needsContext) {
-    let contextText = '';
+    let contextText = '🔍 **Analysis Required**: The tests need your attention to provide better guidance.\n\n';
+    
     if (result.buildErrors && result.buildErrors.length > 0) {
-      contextText += '\nBuild errors:\n' + result.buildErrors.join('\n');
+      contextText += '**Build Errors Found:**\n';
+      result.buildErrors.forEach((error, index) => {
+        contextText += `${index + 1}. ${error}\n`;
+      });
+      contextText += '\n';
     }
+    
     if (result.testFailures && result.testFailures.length > 0) {
-      contextText += '\nTest failures:\n' + result.testFailures
-        .map((f: any) => {
-          let details = '- ' + (f.testIdentifier || '');
-          if (f.suiteName) details += '\n  Suite: ' + f.suiteName;
-          if (f.file) details += '\n  File: ' + f.file;
-          if (f.line) details += '\n  Line: ' + f.line;
-          if (f.message) details += '\n  Message: ' + f.message;
-          if (f.stack) details += '\n  Stack: ' + f.stack;
-          return details;
-        })
-        .join('\n');
+      contextText += '**Test Failures Detected:**\n';
+      result.testFailures.forEach((f: any, index: number) => {
+        contextText += `${index + 1}. **${f.testIdentifier || 'Unknown Test'}**\n`;
+        if (f.suiteName) contextText += `   Suite: ${f.suiteName}\n`;
+        if (f.file) contextText += `   File: ${f.file}\n`;
+        if (f.line) contextText += `   Line: ${f.line}\n`;
+        if (f.message) contextText += `   Error: ${f.message}\n`;
+        if (f.stack) contextText += `   Stack: ${f.stack}\n`;
+        if (f.category) contextText += `   Category: ${f.category}\n`;
+        if (f.severity) contextText += `   Severity: ${f.severity}\n`;
+        if (f.suggestions && f.suggestions.length > 0) {
+          contextText += `   Suggestions:\n`;
+          f.suggestions.forEach((suggestion: string) => {
+            contextText += `   - ${suggestion}\n`;
+          });
+        }
+        contextText += '\n';
+      });
     }
-    return {
-      content: [
-        {
-          type: 'text',
-          text: 'Incomplete context: ' + (result.message || 'Please provide the missing context and retry.') + contextText,
-          _meta: undefined
-        },
-      ],
-      _meta: undefined
-    };
+
+    contextText += '**Next Steps:**\n';
+    contextText += '• Please provide the source code for failing tests and related implementation\n';
+    contextText += '• Include relevant class/function definitions that are being tested\n';
+    contextText += '• Share any recent changes that might have caused these failures\n';
+
+    return createStructuredResponse(
+      'failure',
+      contextText,
+      result
+    );
   }
   if (!result || typeof result !== 'object' || !('success' in result)) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: 'Tests could not be completed. The server did not return a valid result. This may indicate a build system error or a misconfiguration. Please check your project/workspace path and try again.',
-          _meta: undefined
-        },
-      ],
-      _meta: undefined
-    };
+    return createStructuredResponse(
+      'error',
+      '❌ **Test Execution Error**\n\n' +
+      'The tests could not be completed due to a system error. This may indicate:\n' +
+      '• Build system misconfiguration\n' +
+      '• Invalid project/workspace path\n' +
+      '• Missing dependencies\n\n' +
+      '**Next Steps:**\n' +
+      '• Verify your project/workspace path is correct\n' +
+      '• Ensure Xcode and build tools are properly installed\n' +
+      '• Check project configuration and try again',
+      undefined
+    );
   }
+
   if (result.success) {
-    return { content: [{ type: 'text', text: JSON.stringify(result.data), _meta: undefined }], _meta: undefined };
+    return createStructuredResponse(
+      'success',
+      `✅ **All Tests Passed!**\n\n` +
+      `${result.data || 'Test execution completed successfully.'}\n\n` +
+      '**Recommendations:**\n' +
+      '• Consider adding more comprehensive test coverage\n' +
+      '• Review code coverage reports if available\n' +
+      '• Ensure tests cover edge cases and error conditions',
+      result
+    );
   } else {
     if (
       'buildErrors' in result &&
       Array.isArray(result.buildErrors) &&
       result.buildErrors.length > 0
     ) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: 'Build errors occurred.\n\n' + result.buildErrors.map((e: string) => '- ' + e).join('\n') + '\n\nFull error JSON:\n' + JSON.stringify(result, null, 2),
-            _meta: undefined
-          },
-        ],
-        _meta: undefined
-      };
+      let errorText = '🔨 **Build Errors Detected**\n\n';
+      errorText += 'The following build errors must be resolved before tests can run:\n\n';
+      result.buildErrors.forEach((error, index) => {
+        errorText += `${index + 1}. ${error}\n`;
+      });
+      errorText += '\n**Next Steps:**\n';
+      errorText += '• Fix compilation errors in source code\n';
+      errorText += '• Check import statements and dependencies\n';
+      errorText += '• Ensure all required files are included in target\n';
+      errorText += '• Run `xcodebuild clean` if needed to clear build cache\n';
+      
+      return createStructuredResponse('failure', errorText, result);
     }
+    
     if (
       'testFailures' in result &&
       Array.isArray(result.testFailures) &&
       result.testFailures.length > 0
     ) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: 'Test failures:\n\n' + result.testFailures.map((f: any) => '- ' + f.testIdentifier + ': ' + (f.message || '')).join('\n') + '\n\nFull error JSON:\n' + JSON.stringify(result, null, 2),
-            _meta: undefined
-          },
-        ],
-        _meta: undefined
-      };
+      let failureText = '🧪 **Test Failures Detected**\n\n';
+      
+      // Group failures by severity
+      const failuresBySeverity = (result.testFailures as any[]).reduce((acc, failure) => {
+        const severity = failure.severity || 'medium';
+        if (!acc[severity]) acc[severity] = [];
+        acc[severity].push(failure);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      const severityOrder = ['critical', 'high', 'medium', 'low'];
+      
+      severityOrder.forEach(severity => {
+        const failures = failuresBySeverity[severity];
+        if (failures && failures.length > 0) {
+          const emoji = severity === 'critical' ? '🔴' : severity === 'high' ? '🟠' : severity === 'medium' ? '🟡' : '🟢';
+          failureText += `${emoji} **${severity.toUpperCase()} Priority (${failures.length} failure${failures.length > 1 ? 's' : ''})**\n\n`;
+          
+          failures.forEach((failure: any, index: number) => {
+            failureText += `${index + 1}. **${failure.testIdentifier || 'Unknown Test'}**\n`;
+            if (failure.suiteName) failureText += `   📁 Suite: ${failure.suiteName}\n`;
+            if (failure.file) failureText += `   📄 File: ${failure.file}\n`;
+            if (failure.line) failureText += `   📍 Line: ${failure.line}\n`;
+            if (failure.message) failureText += `   💬 Error: ${failure.message}\n`;
+            if (failure.category) failureText += `   🏷️ Category: ${failure.category}\n`;
+            
+            if (failure.suggestions && failure.suggestions.length > 0) {
+              failureText += `   💡 Suggestions:\n`;
+              failure.suggestions.forEach((suggestion: string) => {
+                failureText += `      • ${suggestion}\n`;
+              });
+            }
+            failureText += '\n';
+          });
+        }
+      });
+
+      return createStructuredResponse('failure', failureText, result);
     }
     if (result.error === 'max-retries') {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: 'Tests were rebuilt the maximum number of times, but are still failing. Please review your test failures and code before retrying.',
-            _meta: undefined
-          },
-        ],
-        _meta: undefined
-      };
+      return createStructuredResponse(
+        'error',
+        '🔄 **Maximum Retry Attempts Exceeded**\n\n' +
+        'The tests were rebuilt multiple times but are still failing. This indicates persistent issues that require manual review.\n\n' +
+        '**Next Steps:**\n' +
+        '• Carefully review all test failures and error messages\n' +
+        '• Check for systematic issues in test setup or configuration\n' +
+        '• Consider running individual tests to isolate problems\n' +
+        '• Review recent code changes that might have introduced issues',
+        result
+      );
     }
+    
     if (result.error === 'build-error') {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: 'Tests failed to build. There was a build error, not just a test failure. Please check your build logs for details and ensure your project builds successfully before running tests.',
-            _meta: undefined
-          },
-        ],
-        _meta: undefined
-      };
+      return createStructuredResponse(
+        'error',
+        '🔨 **Build System Error**\n\n' +
+        'Tests failed to build due to compilation or build system issues.\n\n' +
+        '**Common Causes:**\n' +
+        '• Syntax errors in source code\n' +
+        '• Missing imports or dependencies\n' +
+        '• Incorrect build configuration\n' +
+        '• Corrupted build cache\n\n' +
+        '**Next Steps:**\n' +
+        '• Check build logs for detailed error information\n' +
+        '• Ensure your project builds successfully in Xcode\n' +
+        '• Run `xcodebuild clean` to clear build cache\n' +
+        '• Verify all dependencies are properly configured',
+        result
+      );
     }
+    
     if (result.error === 'missing-project') {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: 'The .xcworkspace or .xcodeproj file is missing or was not found. Please provide an absolute path to your project or workspace file. Hint: Relative paths may not work—use the full path from the root of your filesystem.',
-            _meta: undefined
-          },
-        ],
-        _meta: undefined
-      };
+      return createStructuredResponse(
+        'error',
+        '📁 **Project File Not Found**\n\n' +
+        'The specified .xcworkspace or .xcodeproj file could not be found.\n\n' +
+        '**Next Steps:**\n' +
+        '• Verify the project/workspace path is correct\n' +
+        '• Use absolute paths rather than relative paths\n' +
+        '• Ensure the file exists and is accessible\n' +
+        '• Check file permissions if necessary\n\n' +
+        '**Example:**\n' +
+        '• Correct: `/Users/developer/MyApp/MyApp.xcworkspace`\n' +
+        '• Incorrect: `./MyApp.xcworkspace`',
+        result
+      );
     }
-    return {
-      content: [
-        { type: 'text', text: 'Error: ' + result.error, _meta: undefined },
-      ],
-      _meta: undefined
-    };
+    
+    return createStructuredResponse(
+      'error',
+      `❌ **Unexpected Error**\n\n` +
+      `An unexpected error occurred: ${result.error}\n\n` +
+      '**Next Steps:**\n' +
+      '• Check the error details above\n' +
+      '• Verify your project configuration\n' +
+      '• Try running the tests again\n' +
+      '• Contact support if the issue persists',
+      result
+    );
   }
 }
