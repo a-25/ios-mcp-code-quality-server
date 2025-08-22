@@ -180,6 +180,15 @@ export function formatTestResultResponse(
         if (f.stack) contextText += `   Stack: ${f.stack}\n`;
         if (f.category) contextText += `   Category: ${f.category}\n`;
         if (f.severity) contextText += `   Severity: ${f.severity}\n`;
+        
+        // Include source code context if available
+        if (f.sourceContext?.testCode) {
+          contextText += `   **Test Code Context:**\n\`\`\`swift\n${f.sourceContext.testCode}\n\`\`\`\n`;
+        }
+        if (f.sourceContext?.imports && f.sourceContext.imports.length > 0) {
+          contextText += `   **Imports:** ${f.sourceContext.imports.join(', ')}\n`;
+        }
+        
         if (f.suggestions && f.suggestions.length > 0) {
           contextText += `   Suggestions:\n`;
           f.suggestions.forEach((suggestion: string) => {
@@ -285,6 +294,15 @@ export function formatTestResultResponse(
                 failureText += `      • ${suggestion}\n`;
               });
             }
+            
+            // Include source code context if available
+            if (failure.sourceContext?.testCode) {
+              failureText += `   📝 **Test Code:**\n\`\`\`swift\n${failure.sourceContext.testCode}\n\`\`\`\n`;
+            }
+            if (failure.sourceContext?.imports && failure.sourceContext.imports.length > 0) {
+              failureText += `   📥 **Imports:** ${failure.sourceContext.imports.join(', ')}\n`;
+            }
+            
             failureText += '\n';
           });
         }

@@ -3,6 +3,7 @@ import { exec } from "child_process";
 import util from "util";
 import fs from "fs-extra";
 import { spawnAndCollectOutput, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
+import { enhanceTestFailuresWithSourceContext, extractProjectRoot } from "./sourceCodeContext.js";
 
 export interface ExecAsyncResult {
   stdout: string;
@@ -400,6 +401,17 @@ export async function runTestsAndParseFailures(
 
   if (await fs.pathExists(xcresultPath)) {
     testFailures = await parseXcresultForFailures(xcresultPath);
+    
+    // Enhance test failures with source code context
+    const projectRoot = extractProjectRoot(options);
+    if (projectRoot && testFailures.length > 0) {
+      console.log(`[MCP] Enhancing ${testFailures.length} test failures with source context from project root: ${projectRoot}`);
+      try {
+        testFailures = await enhanceTestFailuresWithSourceContext(testFailures, projectRoot);
+      } catch (error) {
+        console.warn(`[MCP] Failed to enhance test failures with source context:`, error);
+      }
+    }
   }
 
   // Create enhanced result with structured data
