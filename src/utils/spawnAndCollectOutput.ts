@@ -10,8 +10,8 @@ export async function spawnAndCollectOutput(cmd: string): Promise<SpawnOutputRes
     return { stdout, stderr };
   } catch (error: any) {
     return {
-      stdout: error.stdout || '',
-      stderr: error.stderr || error.message || ''
+      stdout: error.stdout || "",
+      stderr: error.stderr || error.message || ""
     };
   }
 }

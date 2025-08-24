@@ -94,6 +94,30 @@ export LOG_LEVEL=debug
 npm start
 ```
 
+### Configuration
+
+Environment variables (with defaults):
+
+```bash
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+LOG_LEVEL=info
+
+# MCP Server Identity
+MCP_SERVER_NAME=ios-mcp-code-quality-server
+MCP_SERVER_VERSION=0.1.0
+
+# Security Settings
+ALLOWED_HOSTS=127.0.0.1,localhost,127.0.0.1:3000,localhost:3000
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX_REQUESTS=100
+
+# Performance Settings
+SESSION_CLEANUP_INTERVAL_MS=300000
+MAX_CONCURRENT_TASKS=5
+```
+
 ## Tools & Capabilities
 
 ### Test Tool
