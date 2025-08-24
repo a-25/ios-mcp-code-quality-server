@@ -1,8 +1,22 @@
 // Explicit result type for orchestrateTask and helpers
 import type { TestFailure, TestRunResult } from "./testRunner.js";
+
+export enum TaskErrorType {
+  BUILD_ERROR = "build-error",
+  TEST_FAILURES = "test-failures", 
+  TEST_FAILURE = "test-failure", // Legacy alias
+  MISSING_PROJECT = "missing-project",
+  MAX_RETRIES = "max-retries",
+  SWIFTLINT_NOT_INSTALLED = "swiftlint-not-installed",
+  SWIFTLINT_EXECUTION_FAILED = "swiftlint-execution-failed",
+  NEEDS_CONTEXT = "needs-context",
+  UNKNOWN_ERROR = "unknown-error",
+  UNKNOWN_TASK_TYPE = "unknown-task-type"
+}
+
 export type TaskResult<T> =
   | { success: true; data: T }
-  | { success: false; error: string; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
+  | { success: false; error: TaskErrorType; buildErrors?: string[]; testFailures?: TestFailure[]; aiSuggestions?: string[]; needsContext?: boolean; message?: string };
 import PQueue from "p-queue";
 import { runTestsAndParseFailures } from "./testRunner.js";
 import { checkSwiftLintInstallation, runSwiftLintOnChangedFiles, runSwiftLintWithConfig, type SwiftLintResult } from "./swiftLint.js";
@@ -21,7 +35,7 @@ export async function handleTestFixLoop(options: TestFixOptions): Promise<TaskRe
       // Instead of calling AI, request more context from the external system
       return {
         success: false,
-        error: "build-error",
+        error: TaskErrorType.BUILD_ERROR,
         buildErrors: result.buildErrors,
         aiSuggestions: [],
         needsContext: true,
@@ -36,7 +50,7 @@ export async function handleTestFixLoop(options: TestFixOptions): Promise<TaskRe
     // Instead of calling AI, request more context from the external system
     return {
       success: false,
-      error: "test-failure",
+      error: TaskErrorType.TEST_FAILURE,
       testFailures: result.testFailures,
       aiSuggestions: [],
       needsContext: true,
@@ -45,12 +59,12 @@ export async function handleTestFixLoop(options: TestFixOptions): Promise<TaskRe
   } catch (err: any) {
     const msg = String(err?.message || err);
     if (/no such file|not found|does not exist|missing/i.test(msg)) {
-      return { success: false, error: "missing-project" };
+      return { success: false, error: TaskErrorType.MISSING_PROJECT };
     }
     if (/build error|build failed|xcodebuild/i.test(msg)) {
-      return { success: false, error: "build-error", buildErrors: [msg] };
+      return { success: false, error: TaskErrorType.BUILD_ERROR, buildErrors: [msg] };
     }
-    return { success: false, error: msg, buildErrors: [msg] };
+    return { success: false, error: TaskErrorType.UNKNOWN_ERROR, buildErrors: [msg] };
   }
 }
 
@@ -63,7 +77,7 @@ export async function handleLintFix(options: LintFixOptions): Promise<TaskResult
     console.log("[MCP] SwiftLint is not installed");
     return { 
       success: false, 
-      error: 'swiftlint-not-installed',
+      error: TaskErrorType.SWIFTLINT_NOT_INSTALLED,
       message: installationCheck.error || "SwiftLint is not installed"
     };
   }
@@ -80,7 +94,7 @@ export async function handleLintFix(options: LintFixOptions): Promise<TaskResult
     if (!result.success) {
       return { 
         success: false, 
-        error: 'swiftlint-execution-failed',
+        error: TaskErrorType.SWIFTLINT_EXECUTION_FAILED,
         message: result.error || "SwiftLint execution failed"
       };
     }
@@ -92,12 +106,12 @@ export async function handleLintFix(options: LintFixOptions): Promise<TaskResult
   } catch (err: any) {
     const msg = String(err?.message || err);
     if (/no such file|not found|does not exist|missing/i.test(msg)) {
-      return { success: false, error: "missing-project" };
+      return { success: false, error: TaskErrorType.MISSING_PROJECT };
     }
     if (/build error|build failed|xcodebuild/i.test(msg)) {
-      return { success: false, error: "build-error" };
+      return { success: false, error: TaskErrorType.BUILD_ERROR };
     }
-    return { success: false, error: msg };
+    return { success: false, error: TaskErrorType.UNKNOWN_ERROR };
   }
 }
 
@@ -110,7 +124,7 @@ export async function handleLint(options: LintOptions): Promise<TaskResult<Swift
     console.log("[MCP] SwiftLint is not installed");
     return { 
       success: false, 
-      error: 'swiftlint-not-installed',
+      error: TaskErrorType.SWIFTLINT_NOT_INSTALLED,
       message: installationCheck.error || "SwiftLint is not installed"
     };
   }
@@ -127,7 +141,7 @@ export async function handleLint(options: LintOptions): Promise<TaskResult<Swift
     if (!result.success) {
       return { 
         success: false, 
-        error: 'swiftlint-execution-failed',
+        error: TaskErrorType.SWIFTLINT_EXECUTION_FAILED,
         message: result.error || "SwiftLint execution failed"
       };
     }
@@ -139,12 +153,12 @@ export async function handleLint(options: LintOptions): Promise<TaskResult<Swift
   } catch (err: any) {
     const msg = String(err?.message || err);
     if (/no such file|not found|does not exist|missing/i.test(msg)) {
-      return { success: false, error: "missing-project" };
+      return { success: false, error: TaskErrorType.MISSING_PROJECT };
     }
     if (/build error|build failed|xcodebuild/i.test(msg)) {
-      return { success: false, error: "build-error" };
+      return { success: false, error: TaskErrorType.BUILD_ERROR };
     }
-    return { success: false, error: msg };
+    return { success: false, error: TaskErrorType.UNKNOWN_ERROR };
   }
 }
 
@@ -158,47 +172,47 @@ export enum TaskType {
 export async function orchestrateTask(type: TaskType, options: any = {}): Promise<TaskResult<any>> {
   console.log(`🧠 [MCP] Starting task: ${type}`);
   console.log("[MCP] Options:", options);
-  let result: TaskResult<any> = { success: false, error: "Unknown task type" };
+  let result: TaskResult<any> = { success: false, error: TaskErrorType.UNKNOWN_TASK_TYPE };
   async function runTestFix(): Promise<TaskResult<string>> {
     try {
       return await handleTestFixLoop(options as TestFixOptions);
     } catch (err: any) {
-      return { success: false, error: String(err?.message || err || "unknown-error") };
+      return { success: false, error: TaskErrorType.UNKNOWN_ERROR };
     }
   }
   async function runLintFix(): Promise<TaskResult<SwiftLintResult>> {
     try {
       return await handleLintFix(options as LintFixOptions);
     } catch (err: any) {
-      return { success: false, error: String(err?.message || err || "unknown-error") };
+      return { success: false, error: TaskErrorType.UNKNOWN_ERROR };
     }
   }
   async function runLint(): Promise<TaskResult<SwiftLintResult>> {
     try {
       return await handleLint(options as LintOptions);
     } catch (err: any) {
-      return { success: false, error: String(err?.message || err || "unknown-error") };
+      return { success: false, error: TaskErrorType.UNKNOWN_ERROR };
     }
   }
   switch (type) {
   case TaskType.TestFix: {
     const r = await queue.add(runTestFix);
-    result = r === undefined ? { success: false, error: "unknown-error" } : r;
+    result = r === undefined ? { success: false, error: TaskErrorType.UNKNOWN_ERROR } : r;
     break;
   }
   case TaskType.LintFix: {
     const r = await queue.add(runLintFix);
-    result = r === undefined ? { success: false, error: "unknown-error" } : r;
+    result = r === undefined ? { success: false, error: TaskErrorType.UNKNOWN_ERROR } : r;
     break;
   }
   case TaskType.Lint: {
     const r = await queue.add(runLint);
-    result = r === undefined ? { success: false, error: "unknown-error" } : r;
+    result = r === undefined ? { success: false, error: TaskErrorType.UNKNOWN_ERROR } : r;
     break;
   }
   default:
     console.warn("[MCP] Unknown task type: ", type);
-    result = { success: false, error: "Unknown task type" };
+    result = { success: false, error: TaskErrorType.UNKNOWN_TASK_TYPE };
   }
   await queue.onIdle();
   console.log("[MCP] ✅ Task completed:", type);

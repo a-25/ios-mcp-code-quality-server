@@ -4,6 +4,7 @@ import path from 'path';
 import { formatTestResultResponse } from '../core/formatTestResultResponse.js';
 import type { TestFixOptions } from '../core/taskOptions.js';
 import type { TaskResult } from '../core/taskOrchestrator.js';
+import { TaskErrorType } from '../core/taskOrchestrator.js';
 
 describe('End-to-End AI Enhancement Integration', () => {
   const testDir = '/tmp/e2e-ai-test';
@@ -100,34 +101,16 @@ class UserAuthenticationTests: XCTestCase {
 
       const result: TaskResult<string> = {
         success: false,
-        error: 'test-failures',
+        error: TaskErrorType.TEST_FAILURES,
         testFailures: [enhancedTestFailure],
         buildErrors: [],
-        summary: {
-          totalFailures: 1,
-          failedTests: 1,
-          passedTests: 2,
-          duration: 8.7,
-          platform: 'iOS 17.0 Simulator',
-          xcodeVersion: 'Xcode 15.0'
-        },
-        artifacts: {
-          xcresultPath: '/path/to/test.xcresult',
-          screenshots: ['login_failure_screenshot.png'],
-          logFiles: ['test_output.log'],
-          coverageFiles: ['coverage.json']
-        },
-        nextSteps: [
-          'Priority: Fix high-priority test failure first',
-          'Review assertion logic in testInvalidUserLogin',
-          'Run tests again after each fix to verify resolution',
-          'Consider running individual test classes to isolate issues'
-        ],
-        suggestions: [
+        aiSuggestions: [
           'Address 1 assertion failure',
           'Review test logic - the assertion appears to be inverted',
           'Verify authentication service behavior for invalid credentials'
-        ]
+        ],
+        needsContext: false,
+        message: 'Test failures detected in authentication tests'
       };
 
       const response = formatTestResultResponse(input, validation, result);
@@ -190,21 +173,7 @@ class UserAuthenticationTests: XCTestCase {
 
       const result: TaskResult<string> = {
         success: true,
-        data: 'All 15 tests passed successfully!',
-        summary: {
-          totalFailures: 0,
-          passedTests: 15,
-          duration: 12.3,
-          platform: 'iOS 17.0 Simulator'
-        },
-        nextSteps: [
-          'All tests passed! Consider adding more test coverage',
-          'Review code coverage reports if available'
-        ],
-        suggestions: [
-          'Consider adding edge case tests',
-          'Add performance tests for critical paths'
-        ]
+        data: 'All 15 tests passed successfully!'
       };
 
       const response = formatTestResultResponse(input, { valid: true }, result);
@@ -218,24 +187,18 @@ class UserAuthenticationTests: XCTestCase {
     it('should provide build-first guidance when build errors exist', () => {
       const result: TaskResult<string> = {
         success: false,
-        error: 'build-error',
+        error: TaskErrorType.BUILD_ERROR,
         buildErrors: [
           'Undefined symbol: _OBJC_CLASS_$_AuthenticationService',
           'Use of undeclared identifier \'User\''
         ],
         testFailures: [],
-        summary: {
-          buildErrors: 2,
-          totalFailures: 0
-        },
-        nextSteps: [
-          'Fix build errors before proceeding with test failures',
-          'Check project configuration and dependencies'
-        ],
-        suggestions: [
+        aiSuggestions: [
           'Add missing import statements',
           'Verify class definitions are included in target'
-        ]
+        ],
+        needsContext: false,
+        message: 'Build errors must be fixed before running tests'
       };
 
       const response = formatTestResultResponse(
@@ -279,18 +242,15 @@ class UserAuthenticationTests: XCTestCase {
 
       const result: TaskResult<string> = {
         success: false,
-        error: 'test-failures',
+        error: TaskErrorType.TEST_FAILURES,
         testFailures: [complexFailure],
         buildErrors: [],
-        nextSteps: [
-          'Debug API endpoint configuration',
-          'Check test server setup',
-          'Run individual network tests to isolate issues'
-        ],
-        suggestions: [
+        aiSuggestions: [
           'Review API endpoint URLs',
           'Add mock network responses for consistent testing'
-        ]
+        ],
+        needsContext: false,
+        message: 'Network test failure detected'
       };
 
       const response = formatTestResultResponse(
@@ -323,7 +283,7 @@ class UserAuthenticationTests: XCTestCase {
 
       // ✅ 6. Next steps for iterative workflow
       const nextSteps = response._meta?.structured?.actionable?.nextSteps;
-      expect(nextSteps).toContain('Debug API endpoint configuration');
+      expect(nextSteps).toContain('Priority: Fix high-priority test failure first');
 
       // ✅ 7. Human-readable explanation for user communication
       expect(response.content[0].text).toMatch(/🧪.*Test Failures Detected/);

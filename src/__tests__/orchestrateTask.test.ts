@@ -1,20 +1,11 @@
-// Error type enum from testRunner.test.ts
-enum TestErrorType {
-  MaxRetries = "max-retries",
-  BuildError = "build-error",
-  MissingProject = "missing-project",
-  OtherError = "other-error",
-  UnknownError = "unknown-error",
-  LintFail = "lint-fail",
-  Fail = "fail",
-}
-
 import { vi, beforeEach, describe, it, expect } from "vitest";
+import { TaskErrorType } from "../core/taskOrchestrator.js";
 
 // Mock the entire module before importing anything
-vi.mock("../core/taskOrchestrator.js", () => {
+vi.mock("../core/taskOrchestrator.js", async (importOriginal) => {
+  const actual = await importOriginal() as any;
   return {
-    __esModule: true,
+    ...actual,
     // We'll fill these with vi.fn() and replace later
     orchestrateTask: vi.fn(),
     handleTestFixLoop: vi.fn(),
@@ -36,7 +27,9 @@ describe("task handlers", () => {
     xcworkspace: "TestWorkspace.xcworkspace",
     destination: "platform=iOS Simulator,name=iPhone 16"
   };
-  const validLintFixArg = "TestFile.swift";
+  const validLintFixArg = {
+    changedFiles: ["TestFile.swift"]
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -54,12 +47,12 @@ describe("task handlers", () => {
   });
 
   it("handles TestFix with error", async () => {
-    (handleTestFixLoop as any).mockRejectedValue(new Error(TestErrorType.Fail));
+    (handleTestFixLoop as any).mockRejectedValue(new Error(TaskErrorType.UNKNOWN_ERROR));
     try {
       await handleTestFixLoop(validTestFixOptions);
       throw new Error("Expected failure result");
     } catch (e: any) {
-      expect(e.message).toBe(TestErrorType.Fail);
+      expect(e.message).toBe(TaskErrorType.UNKNOWN_ERROR);
     }
   });
 
@@ -75,32 +68,32 @@ describe("task handlers", () => {
   });
 
   it("handles LintFix with error", async () => {
-    (handleLintFix as any).mockRejectedValue(new Error(TestErrorType.LintFail));
+    (handleLintFix as any).mockRejectedValue(new Error(TaskErrorType.UNKNOWN_ERROR));
     try {
       await handleLintFix(validLintFixArg);
       throw new Error("Expected failure result");
     } catch (e: any) {
-      expect(e.message).toBe(TestErrorType.LintFail);
+      expect(e.message).toBe(TaskErrorType.UNKNOWN_ERROR);
     }
   });
 
   it("returns error if TestFix returns failure", async () => {
-    (handleTestFixLoop as any).mockResolvedValue({ success: false, error: TestErrorType.UnknownError } as import("../core/taskOrchestrator.js").TaskResult<string>);
+    (handleTestFixLoop as any).mockResolvedValue({ success: false, error: TaskErrorType.UNKNOWN_ERROR } as import("../core/taskOrchestrator.js").TaskResult<string>);
     const result = await handleTestFixLoop(validTestFixOptions);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toBe(TestErrorType.UnknownError);
+      expect(result.error).toBe(TaskErrorType.UNKNOWN_ERROR);
     } else {
       throw new Error("Expected failure result");
     }
   });
 
   it("returns error if LintFix returns failure", async () => {
-    (handleLintFix as any).mockResolvedValue({ success: false, error: TestErrorType.UnknownError } as import("../core/taskOrchestrator.js").TaskResult<string>);
+    (handleLintFix as any).mockResolvedValue({ success: false, error: TaskErrorType.UNKNOWN_ERROR } as import("../core/taskOrchestrator.js").TaskResult<string>);
     const result = await handleLintFix(validLintFixArg);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toBe(TestErrorType.UnknownError);
+      expect(result.error).toBe(TaskErrorType.UNKNOWN_ERROR);
     } else {
       throw new Error("Expected failure result");
     }

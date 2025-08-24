@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { formatTestResultResponse, type AIFriendlyTestResponse } from '../core/formatTestResultResponse.js';
 import type { TestFixOptions } from '../core/taskOptions.js';
 import type { TaskResult } from '../core/taskOrchestrator.js';
+import { TaskErrorType } from '../core/taskOrchestrator.js';
 
 describe('AI Enhancement Features', () => {
   const baseInput: TestFixOptions = {
@@ -33,16 +34,12 @@ describe('AI Enhancement Features', () => {
 
       const result: TaskResult<string> = {
         success: false,
-        error: 'test-failures',
+        error: TaskErrorType.TEST_FAILURES,
         testFailures: [testFailure],
         buildErrors: [],
-        summary: {
-          totalFailures: 1,
-          failedTests: 1,
-          platform: 'iOS Simulator'
-        },
-        nextSteps: ['Fix critical test failure', 'Run tests again'],
-        suggestions: ['Review assertion logic']
+        aiSuggestions: ['Review assertion logic'],
+        needsContext: false,
+        message: 'Test failure detected'
       };
 
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -70,21 +67,17 @@ describe('AI Enhancement Features', () => {
       
       // Check actionable items
       expect(res._meta?.structured?.actionable?.priority).toBe('fix_critical');
-      expect(res._meta?.structured?.actionable?.nextSteps).toContain('Fix critical test failure');
+      expect(res._meta?.structured?.actionable?.suggestions).toEqual(['Review assertion logic']);
     });
 
     it('should prioritize build errors over test failures', () => {
       const result: TaskResult<string> = {
         success: false,
-        error: 'build-error',
+        error: TaskErrorType.BUILD_ERROR,
         buildErrors: ['Compilation error: undefined symbol'],
         testFailures: [],
-        summary: {
-          buildErrors: 1,
-          totalFailures: 0
-        },
-        nextSteps: ['Fix build errors first'],
-        suggestions: ['Check import statements']
+        aiSuggestions: ['Check import statements'],
+        message: 'Build failed with compilation errors'
       };
 
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -129,7 +122,7 @@ describe('AI Enhancement Features', () => {
 
       const result: TaskResult<string> = {
         success: false,
-        error: 'test-failures',
+        error: TaskErrorType.TEST_FAILURES,
         testFailures: [testFailure]
       };
 
@@ -156,7 +149,7 @@ describe('AI Enhancement Features', () => {
 
       const result: TaskResult<string> = {
         success: false,
-        error: 'test-failures',
+        error: TaskErrorType.TEST_FAILURES,
         testFailures: [testFailure]
       };
 
@@ -187,7 +180,7 @@ describe('AI Enhancement Features', () => {
 
       const result: TaskResult<string> = {
         success: false,
-        error: 'test-failures',
+        error: TaskErrorType.TEST_FAILURES,
         testFailures: [testFailure]
       };
 
@@ -213,7 +206,7 @@ describe('AI Enhancement Features', () => {
     it('should provide actionable next steps', () => {
       const result: TaskResult<string> = {
         success: false,
-        error: 'needs-context',
+        error: TaskErrorType.NEEDS_CONTEXT,
         needsContext: true,
         message: 'Need more information',
         testFailures: [{
@@ -257,7 +250,7 @@ describe('AI Enhancement Features', () => {
     it('should provide helpful guidance for missing project files', () => {
       const result: TaskResult<string> = {
         success: false,
-        error: 'missing-project'
+        error: TaskErrorType.MISSING_PROJECT
       };
 
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -277,7 +270,7 @@ describe('AI Enhancement Features', () => {
     it('should handle enhanced TestRunResult with artifacts and suggestions', () => {
       const enhancedResult: TaskResult<string> = {
         success: false,
-        error: 'test-failures',
+        error: TaskErrorType.TEST_FAILURES,
         testFailures: [{
           testIdentifier: 'Test.withScreenshot',
           suiteName: 'Test',
@@ -288,19 +281,8 @@ describe('AI Enhancement Features', () => {
           suggestions: ['Check UI element visibility']
         }],
         buildErrors: [],
-        summary: {
-          totalFailures: 1,
-          failedTests: 1,
-          duration: 45.2,
-          platform: 'iOS 17.0 Simulator'
-        },
-        artifacts: {
-          xcresultPath: '/path/to/results.xcresult',
-          screenshots: ['screenshot1.png', 'screenshot2.png'],
-          logFiles: ['test.log']
-        },
-        nextSteps: ['Review UI test logic', 'Check element selectors'],
-        suggestions: ['Update test selectors', 'Add wait conditions']
+        aiSuggestions: ['Update test selectors', 'Add wait conditions'],
+        message: 'UI test failed with screenshots available'
       };
 
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -309,11 +291,17 @@ describe('AI Enhancement Features', () => {
         enhancedResult
       );
 
-      // Check that enhanced data is preserved
-      expect(res._meta?.structured?.artifacts?.xcresultPath).toBe('/path/to/results.xcresult');
-      expect(res._meta?.structured?.artifacts?.screenshots).toEqual(['screenshot1.png', 'screenshot2.png']);
-      expect(res._meta?.structured?.actionable?.nextSteps).toContain('Review UI test logic');
-      expect(res._meta?.structured?.actionable?.suggestions).toContain('Update test selectors');
+      // Check that structured data is generated from the test failure data
+      expect(res._meta?.structured?.summary?.totalFailures).toBe(1);
+      expect(res._meta?.structured?.failures).toHaveLength(1);
+      const failure = res._meta?.structured?.failures?.[0];
+      expect(failure?.test).toBe('Test.withScreenshot');
+      expect(failure?.severity).toBe('medium');
+      expect(failure?.category).toBe('assertion');
+      expect(failure?.suggestions).toContain('Check UI element visibility');
+      
+      // Check AI suggestions from TaskResult
+      expect(res._meta?.structured?.actionable?.suggestions).toEqual(['Update test selectors', 'Add wait conditions']);
     });
   });
 });

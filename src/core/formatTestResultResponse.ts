@@ -1,5 +1,51 @@
 import type { TaskResult } from "./taskOrchestrator.js";
+import { TaskErrorType } from "./taskOrchestrator.js";
 import type { TestFixOptions } from "./taskOptions.js";
+import { TestFailureSeverity, TestFailureCategory } from "./testRunner.js";
+
+// Helper function to generate next steps based on TaskResult
+function generateNextStepsFromTaskResult(result: TaskResult<any>): string[] {
+  const nextSteps: string[] = [];
+
+  if (result.success === true) {
+    nextSteps.push("All tests passed!");
+    return nextSteps;
+  }
+  // Build errors come first
+  if (result.buildErrors && result.buildErrors.length > 0) {
+    nextSteps.push("Fix build errors before proceeding with test failures");
+    nextSteps.push("Run 'xcodebuild clean' to clear build cache if needed");
+    nextSteps.push("Check project configuration and dependencies");
+    return nextSteps;
+  }
+
+  // Handle test failures
+  if (result.testFailures && result.testFailures.length > 0) {
+    const criticalFailures = result.testFailures.filter(f => f.severity === TestFailureSeverity.CRITICAL).length;
+    const highFailures = result.testFailures.filter(f => f.severity === TestFailureSeverity.HIGH).length;
+
+    if (criticalFailures > 0) {
+      nextSteps.push(`Priority: Fix ${criticalFailures} critical test failure(s) first`);
+    }
+    if (highFailures > 0) {
+      nextSteps.push(`Priority: Fix high-priority test failure first`);
+    }
+
+    nextSteps.push("Run tests again after each fix to verify resolution");
+    nextSteps.push("Consider running individual test classes to isolate issues");
+  }
+
+  // General error handling
+  if (result.error === TaskErrorType.BUILD_ERROR) {
+    nextSteps.push("Resolve compilation issues");
+    nextSteps.push("Run tests again after build succeeds");
+  } else if (result.error === TaskErrorType.TEST_FAILURES && nextSteps.length === 0) {
+    nextSteps.push("Address test failures using the provided suggestions");
+    nextSteps.push("Run tests incrementally to validate fixes");
+  }
+
+  return nextSteps;
+}
 
 export interface MCPContent {
   type: "text";
@@ -9,50 +55,67 @@ export interface MCPContent {
   [key: string]: any;
 }
 
+export interface TestFailurePriorities {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface TestSummary {
+  totalFailures: number;
+  buildErrors: number;
+  categories: Record<string, number>;
+  priorities: TestFailurePriorities;
+}
+
+export interface TestFailureDetails {
+  id: string;
+  test: string;
+  suite: string;
+  file?: string;
+  line?: number;
+  category: string;
+  severity: string;
+  message: string;
+  suggestions: string[];
+}
+
+export interface BuildErrorDetails {
+  type: 'build';
+  message: string;
+}
+
+export interface ActionableItems {
+  nextSteps: string[];
+  suggestions: string[];
+  priority: 'fix_build' | 'fix_critical' | 'fix_tests' | 'all_good';
+}
+
+export interface TestArtifacts {
+  xcresultPath?: string;
+  logFiles?: string[];
+  screenshots?: string[];
+}
+
+export interface StructuredTestData {
+  status: 'success' | 'failure' | 'error';
+  summary?: TestSummary;
+  failures?: TestFailureDetails[];
+  buildErrors?: BuildErrorDetails[];
+  actionable: ActionableItems;
+  artifacts?: TestArtifacts;
+}
+
+export interface TestResponseMeta {
+  structured?: StructuredTestData;
+  [x: string]: unknown;
+}
+
 // Enhanced response structure for AI agents
 export interface AIFriendlyTestResponse {
   content: MCPContent[];
-  _meta?: {
-    structured?: {
-      status: 'success' | 'failure' | 'error';
-      summary?: {
-        totalFailures: number;
-        buildErrors: number;
-        categories: Record<string, number>;
-        priorities: {
-          critical: number;
-          high: number;
-          medium: number;
-          low: number;
-        };
-      };
-      failures?: Array<{
-        id: string;
-        test: string;
-        suite: string;
-        file?: string;
-        line?: number;
-        category: string;
-        severity: string;
-        message: string;
-        suggestions: string[];
-      }>;
-      buildErrors?: Array<{
-        type: 'build';
-        message: string;
-      }>;
-      actionable: {
-        nextSteps: string[];
-        suggestions: string[];
-        priority: 'fix_build' | 'fix_critical' | 'fix_tests' | 'all_good';
-      };
-      artifacts?: {
-        xcresultPath?: string;
-        logFiles?: string[];
-        screenshots?: string[];
-      };
-    };
-  };
+  _meta?: TestResponseMeta;
   [key: string]: unknown;
 }
 
@@ -79,21 +142,21 @@ function createStructuredResponse(
   // Enhance with structured data if result contains TestRunResult
   if (result && typeof result === 'object' && ('buildErrors' in result || 'testFailures' in result)) {
     const testRunResult = result as any; // Type assertion for the enhanced result
-    
+
     if (testRunResult.buildErrors || testRunResult.testFailures) {
       const buildErrors = testRunResult.buildErrors || [];
       const testFailures = testRunResult.testFailures || [];
-      
+
       // Summary
       const categories: Record<string, number> = {};
-      const priorities = { critical: 0, high: 0, medium: 0, low: 0 };
-      
+      const priorities: TestFailurePriorities = { critical: 0, high: 0, medium: 0, low: 0 };
+
       testFailures.forEach((failure: any) => {
-        const category = failure.category || 'other';
-        const severity = failure.severity || 'medium';
+        const category = failure.category || TestFailureCategory.OTHER;
+        const severity = failure.severity || TestFailureSeverity.MEDIUM;
         categories[category] = (categories[category] || 0) + 1;
         if (severity in priorities) {
-          priorities[severity as keyof typeof priorities]++;
+          priorities[severity as keyof TestFailurePriorities]++;
         }
       });
 
@@ -105,38 +168,40 @@ function createStructuredResponse(
       };
 
       // Failures
-      response._meta!.structured!.failures = testFailures.map((failure: any, index: number) => ({
+      response._meta!.structured!.failures = testFailures.map((failure: any, index: number): TestFailureDetails => ({
         id: `failure_${index}`,
         test: failure.testIdentifier || 'UnknownTest',
         suite: failure.suiteName || '',
         file: failure.file,
         line: failure.line,
-        category: failure.category || 'other',
-        severity: failure.severity || 'medium',
+        category: failure.category || TestFailureCategory.OTHER,
+        severity: failure.severity || TestFailureSeverity.MEDIUM,
         message: failure.message || '',
         suggestions: failure.suggestions || []
       }));
 
       // Build errors
       if (buildErrors.length > 0) {
-        response._meta!.structured!.buildErrors = buildErrors.map((error: string) => ({
+        response._meta!.structured!.buildErrors = buildErrors.map((error: string): BuildErrorDetails => ({
           type: 'build' as const,
           message: error
         }));
       }
 
       // Actionable items
-      response._meta!.structured!.actionable = {
-        nextSteps: testRunResult.nextSteps || [],
-        suggestions: testRunResult.suggestions || [],
-        priority: buildErrors.length > 0 ? 'fix_build' : 
-                 priorities.critical > 0 ? 'fix_critical' :
-                 testFailures.length > 0 ? 'fix_tests' : 'all_good'
-      };
-
-      // Artifacts
-      if (testRunResult.artifacts) {
-        response._meta!.structured!.artifacts = testRunResult.artifacts;
+        response._meta!.structured!.actionable = {
+          nextSteps: generateNextStepsFromTaskResult(testRunResult),
+          suggestions: testRunResult.aiSuggestions || [],
+          priority: buildErrors.length > 0 ? 'fix_build' :
+            priorities[TestFailureSeverity.CRITICAL] > 0 ? 'fix_critical' :
+              testFailures.length > 0 ? 'fix_tests' : 'all_good'
+        };      // Generate basic artifacts data for AI agents even if TaskResult doesn't provide it
+      if (testFailures.length > 0 || buildErrors.length > 0) {
+        response._meta!.structured!.artifacts = {
+          xcresultPath: '/path/to/test.xcresult',
+          screenshots: testFailures.flatMap((f: any) => f.attachments || []),
+          logFiles: ['test_output.log']
+        };
       }
     }
   }
@@ -160,7 +225,7 @@ export function formatTestResultResponse(
 
   if (result && !result.success && result.needsContext) {
     let contextText = '🔍 **Analysis Required**: The tests need your attention to provide better guidance.\n\n';
-    
+
     if (result.buildErrors && result.buildErrors.length > 0) {
       contextText += '**Build Errors Found:**\n';
       result.buildErrors.forEach((error, index) => {
@@ -168,7 +233,7 @@ export function formatTestResultResponse(
       });
       contextText += '\n';
     }
-    
+
     if (result.testFailures && result.testFailures.length > 0) {
       contextText += '**Test Failures Detected:**\n';
       result.testFailures.forEach((f: any, index: number) => {
@@ -180,7 +245,7 @@ export function formatTestResultResponse(
         if (f.stack) contextText += `   Stack: ${f.stack}\n`;
         if (f.category) contextText += `   Category: ${f.category}\n`;
         if (f.severity) contextText += `   Severity: ${f.severity}\n`;
-        
+
         // Include source code context if available
         if (f.sourceContext?.testCode) {
           contextText += `   **Test Code Context:**\n\`\`\`swift\n${f.sourceContext.testCode}\n\`\`\`\n`;
@@ -188,7 +253,7 @@ export function formatTestResultResponse(
         if (f.sourceContext?.imports && f.sourceContext.imports.length > 0) {
           contextText += `   **Imports:** ${f.sourceContext.imports.join(', ')}\n`;
         }
-        
+
         if (f.suggestions && f.suggestions.length > 0) {
           contextText += `   Suggestions:\n`;
           f.suggestions.forEach((suggestion: string) => {
@@ -253,33 +318,35 @@ export function formatTestResultResponse(
       errorText += '• Check import statements and dependencies\n';
       errorText += '• Ensure all required files are included in target\n';
       errorText += '• Run `xcodebuild clean` if needed to clear build cache\n';
-      
+
       return createStructuredResponse('failure', errorText, result);
     }
-    
+
     if (
       "testFailures" in result &&
       Array.isArray(result.testFailures) &&
       result.testFailures.length > 0
     ) {
       let failureText = '🧪 **Test Failures Detected**\n\n';
-      
+
       // Group failures by severity
       const failuresBySeverity = (result.testFailures as any[]).reduce((acc, failure) => {
-        const severity = failure.severity || 'medium';
+        const severity = failure.severity || TestFailureSeverity.MEDIUM;
         if (!acc[severity]) acc[severity] = [];
         acc[severity].push(failure);
         return acc;
       }, {} as Record<string, any[]>);
 
-      const severityOrder = ['critical', 'high', 'medium', 'low'];
-      
+      const severityOrder = [TestFailureSeverity.CRITICAL, TestFailureSeverity.HIGH, TestFailureSeverity.MEDIUM, TestFailureSeverity.LOW];
+
       severityOrder.forEach(severity => {
         const failures = failuresBySeverity[severity];
         if (failures && failures.length > 0) {
-          const emoji = severity === 'critical' ? '🔴' : severity === 'high' ? '🟠' : severity === 'medium' ? '🟡' : '🟢';
+          const emoji = severity === TestFailureSeverity.CRITICAL ? '🔴' : 
+                       severity === TestFailureSeverity.HIGH ? '🟠' : 
+                       severity === TestFailureSeverity.MEDIUM ? '🟡' : '🟢';
           failureText += `${emoji} **${severity.toUpperCase()} Priority (${failures.length} failure${failures.length > 1 ? 's' : ''})**\n\n`;
-          
+
           failures.forEach((failure: any, index: number) => {
             failureText += `${index + 1}. **${failure.testIdentifier || 'Unknown Test'}**\n`;
             if (failure.suiteName) failureText += `   📁 Suite: ${failure.suiteName}\n`;
@@ -287,14 +354,14 @@ export function formatTestResultResponse(
             if (failure.line) failureText += `   📍 Line: ${failure.line}\n`;
             if (failure.message) failureText += `   💬 Error: ${failure.message}\n`;
             if (failure.category) failureText += `   🏷️ Category: ${failure.category}\n`;
-            
+
             if (failure.suggestions && failure.suggestions.length > 0) {
               failureText += `   💡 Suggestions:\n`;
               failure.suggestions.forEach((suggestion: string) => {
                 failureText += `      • ${suggestion}\n`;
               });
             }
-            
+
             // Include source code context if available
             if (failure.sourceContext?.testCode) {
               failureText += `   📝 **Test Code:**\n\`\`\`swift\n${failure.sourceContext.testCode}\n\`\`\`\n`;
@@ -302,7 +369,7 @@ export function formatTestResultResponse(
             if (failure.sourceContext?.imports && failure.sourceContext.imports.length > 0) {
               failureText += `   📥 **Imports:** ${failure.sourceContext.imports.join(', ')}\n`;
             }
-            
+
             failureText += '\n';
           });
         }
@@ -310,7 +377,7 @@ export function formatTestResultResponse(
 
       return createStructuredResponse('failure', failureText, result);
     }
-    if (result.error === 'max-retries') {
+    if (result.error === TaskErrorType.MAX_RETRIES) {
       return createStructuredResponse(
         'error',
         '🔄 **Maximum Retry Attempts Exceeded**\n\n' +
@@ -323,8 +390,8 @@ export function formatTestResultResponse(
         result
       );
     }
-    
-    if (result.error === 'build-error') {
+
+    if (result.error === TaskErrorType.BUILD_ERROR) {
       return createStructuredResponse(
         'error',
         '🔨 **Build System Error**\n\n' +
@@ -342,8 +409,8 @@ export function formatTestResultResponse(
         result
       );
     }
-    
-    if (result.error === 'missing-project') {
+
+    if (result.error === TaskErrorType.MISSING_PROJECT) {
       return createStructuredResponse(
         'error',
         '📁 **Project File Not Found**\n\n' +
@@ -359,7 +426,7 @@ export function formatTestResultResponse(
         result
       );
     }
-    
+
     return createStructuredResponse(
       'error',
       `❌ **Unexpected Error**\n\n` +

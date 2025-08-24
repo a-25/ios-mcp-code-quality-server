@@ -5,6 +5,29 @@ import fs from "fs-extra";
 import { spawnAndCollectOutput, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
 import { enhanceTestFailuresWithSourceContext, extractProjectRoot } from "./sourceCodeContext.js";
 
+export enum TestFailureSeverity {
+  CRITICAL = 'critical',
+  HIGH = 'high', 
+  MEDIUM = 'medium',
+  LOW = 'low'
+}
+
+export enum TestFailureCategory {
+  ASSERTION = 'assertion',
+  CRASH = 'crash',
+  TIMEOUT = 'timeout',
+  BUILD = 'build',
+  SETUP = 'setup',
+  TEARDOWN = 'teardown',
+  OTHER = 'other'
+}
+
+export interface TestSourceContext {
+  testCode?: string;
+  relatedCode?: string;
+  imports?: string[];
+}
+
 export interface ExecAsyncResult {
   stdout: string;
 }
@@ -16,35 +39,35 @@ async function cleanupRunDir(runDir: string): Promise<void> {
 }
 
 // Helper function to categorize test failures
-function categorizeFailure(failure: TestFailure): { category: TestFailure['category']; severity: TestFailure['severity'] } {
+function categorizeFailure(failure: TestFailure): { category: TestFailureCategory; severity: TestFailureSeverity } {
   const message = (failure.message || '').toLowerCase();
   const stack = (failure.stack || '').toLowerCase();
   const combined = `${message} ${stack}`;
 
   // Determine category
-  let category: TestFailure['category'] = 'other';
+  let category: TestFailureCategory = TestFailureCategory.OTHER;
   if (combined.includes('assertion') || combined.includes('expect') || combined.includes('assert')) {
-    category = 'assertion';
+    category = TestFailureCategory.ASSERTION;
   } else if (combined.includes('crash') || combined.includes('sigabrt') || combined.includes('signal')) {
-    category = 'crash';
+    category = TestFailureCategory.CRASH;
   } else if (combined.includes('timeout') || combined.includes('timed out')) {
-    category = 'timeout';
+    category = TestFailureCategory.TIMEOUT;
   } else if (combined.includes('build') || combined.includes('compile')) {
-    category = 'build';
+    category = TestFailureCategory.BUILD;
   } else if (combined.includes('setup') || combined.includes('before')) {
-    category = 'setup';
+    category = TestFailureCategory.SETUP;
   } else if (combined.includes('teardown') || combined.includes('after')) {
-    category = 'teardown';
+    category = TestFailureCategory.TEARDOWN;
   }
 
   // Determine severity
-  let severity: TestFailure['severity'] = 'medium';
-  if (category === 'crash' || combined.includes('fatal') || combined.includes('abort')) {
-    severity = 'critical';
-  } else if (category === 'build' || category === 'setup' || combined.includes('error')) {
-    severity = 'high';
-  } else if (category === 'timeout' || combined.includes('warning')) {
-    severity = 'low';
+  let severity: TestFailureSeverity = TestFailureSeverity.MEDIUM;
+  if (category === TestFailureCategory.CRASH || combined.includes('fatal') || combined.includes('abort')) {
+    severity = TestFailureSeverity.CRITICAL;
+  } else if (category === TestFailureCategory.BUILD || category === TestFailureCategory.SETUP || combined.includes('error')) {
+    severity = TestFailureSeverity.HIGH;
+  } else if (category === TestFailureCategory.TIMEOUT || combined.includes('warning')) {
+    severity = TestFailureSeverity.LOW;
   }
 
   return { category, severity };
@@ -54,31 +77,31 @@ function categorizeFailure(failure: TestFailure): { category: TestFailure['categ
 function generateFailureSuggestions(failure: TestFailure): string[] {
   const suggestions: string[] = [];
   const message = (failure.message || '').toLowerCase();
-  const category = failure.category || 'other';
+  const category = failure.category || TestFailureCategory.OTHER;
 
   switch (category) {
-    case 'assertion':
+    case TestFailureCategory.ASSERTION:
       suggestions.push("Review the assertion logic and expected vs actual values");
       suggestions.push("Check if the test data setup is correct");
       suggestions.push("Verify the test expectations match the actual behavior");
       break;
-    case 'crash':
+    case TestFailureCategory.CRASH:
       suggestions.push("Check for nil pointer dereferences or memory issues");
       suggestions.push("Review stack trace for the exact crash location");
       suggestions.push("Add null checks and defensive programming");
       break;
-    case 'timeout':
+    case TestFailureCategory.TIMEOUT:
       suggestions.push("Increase timeout values if the operation is legitimately slow");
       suggestions.push("Check for infinite loops or blocking operations");
       suggestions.push("Use async/await patterns properly in tests");
       break;
-    case 'build':
+    case TestFailureCategory.BUILD:
       suggestions.push("Fix compilation errors in test or source code");
       suggestions.push("Check import statements and module dependencies");
       suggestions.push("Ensure all required files are included in the target");
       break;
-    case 'setup':
-    case 'teardown':
+    case TestFailureCategory.SETUP:
+    case TestFailureCategory.TEARDOWN:
       suggestions.push("Review test setup and cleanup code");
       suggestions.push("Ensure proper initialization of test dependencies");
       suggestions.push("Check for resource cleanup issues");
@@ -115,19 +138,19 @@ function generateTestRunSuggestions(result: TestRunResult): string[] {
   
   if (result.testFailures.length > 0) {
     const categories = result.testFailures.reduce((acc, failure) => {
-      const category = failure.category || 'other';
+      const category = failure.category || TestFailureCategory.OTHER;
       acc[category] = (acc[category] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<TestFailureCategory, number>);
     
     Object.entries(categories).forEach(([category, count]) => {
       suggestions.push(`Address ${count} ${category} failure${count > 1 ? 's' : ''}`);
     });
     
-    if (categories.crash) {
+    if (categories[TestFailureCategory.CRASH]) {
       suggestions.push("Priority: Fix crash issues first as they may mask other problems");
     }
-    if (categories.build) {
+    if (categories[TestFailureCategory.BUILD]) {
       suggestions.push("Fix build-related test failures to ensure clean compilation");
     }
   }
@@ -150,8 +173,8 @@ function generateNextSteps(result: TestRunResult): string[] {
   }
   
   if (result.testFailures.length > 0) {
-    const criticalFailures = result.testFailures.filter(f => f.severity === 'critical').length;
-    const highFailures = result.testFailures.filter(f => f.severity === 'high').length;
+    const criticalFailures = result.testFailures.filter(f => f.severity === TestFailureSeverity.CRITICAL).length;
+    const highFailures = result.testFailures.filter(f => f.severity === TestFailureSeverity.HIGH).length;
     
     if (criticalFailures > 0) {
       nextSteps.push(`Priority: Fix ${criticalFailures} critical test failure(s) first`);
@@ -169,8 +192,7 @@ function generateNextSteps(result: TestRunResult): string[] {
   }
   
   if (result.testFailures.length === 0 && result.buildErrors.length === 0) {
-    nextSteps.push("All tests passed! Consider adding more test coverage");
-    nextSteps.push("Review code coverage reports if available");
+    nextSteps.push("All tests passed!");
   }
   
   return nextSteps;
@@ -184,13 +206,9 @@ export type TestFailure = {
   stack?: string;
   attachments?: string[]; // paths to screenshots
   // Enhanced fields for AI agent support
-  severity?: 'critical' | 'high' | 'medium' | 'low';
-  category?: 'assertion' | 'crash' | 'timeout' | 'build' | 'setup' | 'teardown' | 'other';
-  sourceContext?: {
-    testCode?: string;
-    relatedCode?: string;
-    imports?: string[];
-  };
+  severity?: TestFailureSeverity | 'critical' | 'high' | 'medium' | 'low';
+  category?: TestFailureCategory | 'assertion' | 'crash' | 'timeout' | 'build' | 'setup' | 'teardown' | 'other';
+  sourceContext?: TestSourceContext;
   suggestions?: string[];
   duration?: number; // test duration in seconds
   platform?: string; // iOS version, simulator name, etc.

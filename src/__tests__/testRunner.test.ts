@@ -14,6 +14,7 @@ vi.mock("../core/testRunner.js", async () => {
 
 import { formatTestResultResponse } from "../core/formatTestResultResponse.js";
 import type { TaskResult } from "../core/taskOrchestrator.js";
+import { TaskErrorType } from "../core/taskOrchestrator.js";
 import type { TestFixOptions } from "../core/taskOptions.js";
 
 describe("MCP test tool main logic", () => {
@@ -82,9 +83,9 @@ describe("MCP test tool main logic", () => {
       attachments
     };
     const buildErrors = ["Build failed", "Linker error"];
-    const result: TaskResult = {
+    const result: TaskResult<string> = {
       success: false,
-      error: "needs-context",
+      error: TaskErrorType.NEEDS_CONTEXT,
       needsContext: true,
       message: "Need more info",
       buildErrors,
@@ -128,7 +129,7 @@ describe("MCP test tool main logic", () => {
   it("returns build errors", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: "build-error", buildErrors: ["B1", "B2"] };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.BUILD_ERROR, buildErrors: ["B1", "B2"] };
     const res = formatTestResultResponse(input, validation, result);
     expect(res.content[0].text).toMatch(/Build Errors Detected/);
     expect(res.content[0].text).toMatch(/B1/);
@@ -161,7 +162,7 @@ describe("MCP test tool main logic", () => {
     };
     const result: TaskResult<string> = {
       success: false,
-      error: "test-failures",
+      error: TaskErrorType.TEST_FAILURES,
       testFailures: [testFailure]
     };
     const res = formatTestResultResponse(input, validation, result);
@@ -191,17 +192,10 @@ describe("MCP test tool main logic", () => {
     }
   });
 
-  enum TestErrorType {
-    MaxRetries = "max-retries",
-    BuildError = "build-error",
-    MissingProject = "missing-project",
-    OtherError = "other-error",
-  }
-
   it("returns max-retries error", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: TestErrorType.MaxRetries };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.MAX_RETRIES };
     const res = formatTestResultResponse(input, validation, result);
     expect(res.content[0].text).toMatch(/Maximum Retry Attempts Exceeded/);
   });
@@ -209,7 +203,7 @@ describe("MCP test tool main logic", () => {
   it("returns build-error error", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: TestErrorType.BuildError };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.BUILD_ERROR };
     const res = formatTestResultResponse(input, validation, result);
     expect(res.content[0].text).toMatch(/Build System Error/);
   });
@@ -217,7 +211,7 @@ describe("MCP test tool main logic", () => {
   it("returns missing-project error", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: TestErrorType.MissingProject };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.MISSING_PROJECT };
     const res = formatTestResultResponse(input, validation, result);
     expect(res.content[0].text).toMatch(/Project File Not Found/);
   });
@@ -225,9 +219,9 @@ describe("MCP test tool main logic", () => {
   it("returns fallback error", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: TestErrorType.OtherError };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.UNKNOWN_ERROR };
     const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/Unexpected Error[\s\S]*other-error/);
+    expect(res.content[0].text).toMatch(/Unexpected Error[\s\S]*unknown-error/);
   });
 });
 
