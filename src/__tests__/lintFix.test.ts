@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { handleLintFix } from '../core/taskOrchestrator.js';
+import { handleLintFix, TaskErrorType } from '../core/taskOrchestrator.js';
 import type { LintFixOptions } from '../core/taskOptions.js';
 
 // Mock the SwiftLint module
@@ -31,8 +31,10 @@ describe('handleLintFix', () => {
       const result = await handleLintFix(options);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('swiftlint-not-installed');
-      expect(result.message).toContain('is not installed');
+      if (!result.success) {
+        expect(result.error).toBe(TaskErrorType.SWIFTLINT_NOT_INSTALLED);
+        expect(result.message).toContain('is not installed');
+      }
     });
 
     it('should proceed when SwiftLint is installed', async () => {
@@ -93,7 +95,9 @@ describe('handleLintFix', () => {
         options.configPath
       );
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(mockLintResult);
+      if (result.success) {
+        expect(result.data).toEqual(mockLintResult);
+      }
     });
 
     it('should handle single config path', async () => {
@@ -152,8 +156,10 @@ describe('handleLintFix', () => {
       const result = await handleLintFix(options);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('swiftlint-execution-failed');
-      expect(result.message).toBe('SwiftLint crashed');
+      if (!result.success) {
+        expect(result.error).toBe(TaskErrorType.SWIFTLINT_EXECUTION_FAILED);
+        expect(result.message).toBe('SwiftLint crashed');
+      }
     });
 
     it('should handle unexpected errors during processing', async () => {
@@ -166,7 +172,9 @@ describe('handleLintFix', () => {
       const result = await handleLintFix(options);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Unexpected processing error');
+      if (!result.success) {
+        expect(result.error).toBe(TaskErrorType.UNKNOWN_ERROR);
+      }
     });
   });
 
@@ -209,8 +217,10 @@ describe('handleLintFix', () => {
       const result = await handleLintFix(options);
 
       expect(result.success).toBe(true);
-      expect(result.data).toEqual(mockLintResult);
-      expect(result.data?.warnings).toHaveLength(2);
+      if (result.success) {
+        expect(result.data).toEqual(mockLintResult);
+        expect(result.data?.warnings).toHaveLength(2);
+      }
     });
 
     it('should return empty warnings when no issues found', async () => {
@@ -227,7 +237,9 @@ describe('handleLintFix', () => {
       const result = await handleLintFix(options);
 
       expect(result.success).toBe(true);
-      expect(result.data?.warnings).toHaveLength(0);
+      if (result.success) {
+        expect(result.data?.warnings).toHaveLength(0);
+      }
     });
   });
 });

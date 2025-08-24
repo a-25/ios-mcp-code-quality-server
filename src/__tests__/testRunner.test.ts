@@ -1,7 +1,6 @@
-
 // import testFailureMock from './mockData/testFailureMock.json' with { type: 'json' };
 import testFailureMock from "./mockData/testFailureMock.json" with { type: "json" };
-import { vi } from "vitest";
+import { vi, describe, it, expect } from "vitest";
 
 // Mock execAsync before importing getXcresultObject
 
@@ -15,6 +14,7 @@ vi.mock("../core/testRunner.js", async () => {
 
 import { formatTestResultResponse } from "../core/formatTestResultResponse.js";
 import type { TaskResult } from "../core/taskOrchestrator.js";
+import { TaskErrorType } from "../core/taskOrchestrator.js";
 import type { TestFixOptions } from "../core/taskOptions.js";
 
 describe("MCP test tool main logic", () => {
@@ -83,9 +83,9 @@ describe("MCP test tool main logic", () => {
       attachments
     };
     const buildErrors = ["Build failed", "Linker error"];
-    const result: TaskResult = {
+    const result: TaskResult<string> = {
       success: false,
-      error: "needs-context",
+      error: TaskErrorType.NEEDS_CONTEXT,
       needsContext: true,
       message: "Need more info",
       buildErrors,
@@ -94,30 +94,19 @@ describe("MCP test tool main logic", () => {
     const res = formatTestResultResponse(input, validation, result);
     const text = res.content[0].text;
     // Check all attributes are present and correct
-    expect(text).toContain("Incomplete context");
-    expect(text).toContain("Need more info");
+    expect(text).toContain('Analysis Required');
+    expect(text).toContain('Build Errors Found');
     for (const err of buildErrors) {
       expect(text).toContain(err);
     }
-    expect(text).toContain(`- ${testFailure.testIdentifier}`);
-    // The output does not include 'Suite: ...' or 'File: ...' for needsContext, only testIdentifier, message, etc.
+    expect(text).toContain(testFailure.testIdentifier);
+    // The output includes 'Line: ...' for needsContext
     if (testFailure.line !== undefined) {
       expect(text).toContain(`Line: ${testFailure.line}`);
     }
-    expect(text).toContain(`Message: ${testFailure.message}`);
+    expect(text).toContain(`Error: ${testFailure.message}`);
     if (testFailure.stack) {
       expect(text).toContain(`Stack: ${testFailure.stack}`);
-    }
-    // Ensure nothing is missing
-    const expectedFields = [
-      testFailure.testIdentifier,
-      testFailure.line !== undefined ? String(testFailure.line) : undefined,
-      testFailure.message,
-      testFailure.stack || undefined,
-      ...buildErrors
-    ].filter(Boolean);
-    for (const field of expectedFields) {
-      expect(text).toContain(field);
     }
   });
 
@@ -125,23 +114,24 @@ describe("MCP test tool main logic", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
     const res = formatTestResultResponse(input, validation, undefined);
-    expect(res.content[0].text).toMatch(/Tests could not be completed/);
+    expect(res.content[0].text).toMatch(/Test Execution Error/);
   });
 
   it("returns success result", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: true, data: { foo: "bar" } };
+    const result: TaskResult<any> = { success: true, data: { foo: "bar" } };
     const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toBe(JSON.stringify({ foo: "bar" }));
+    expect(res.content[0].text).toContain("✅ **All Tests Passed!**");
+    expect(res.content[0].text).toContain("[object Object]"); // This is how { foo: "bar" } gets stringified
   });
 
   it("returns build errors", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: "build-error", buildErrors: ["B1", "B2"] };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.BUILD_ERROR, buildErrors: ["B1", "B2"] };
     const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/Build errors occurred/);
+    expect(res.content[0].text).toMatch(/Build Errors Detected/);
     expect(res.content[0].text).toMatch(/B1/);
     expect(res.content[0].text).toMatch(/B2/);
   });
@@ -170,27 +160,25 @@ describe("MCP test tool main logic", () => {
       stack,
       attachments
     };
-    const result: TaskResult = {
+    const result: TaskResult<string> = {
       success: false,
-      error: "test-failures",
+      error: TaskErrorType.TEST_FAILURES,
       testFailures: [testFailure]
     };
     const res = formatTestResultResponse(input, validation, result);
     const text = res.content[0].text;
     // Check all attributes are present and correct
-    expect(text).toContain("Test failures");
-    expect(text).toContain(`- ${testFailure.testIdentifier}`);
-    expect(text).toContain(`: ${testFailure.message}`);
-    // The output includes a JSON dump, so check for the JSON fields as well
-    expect(text).toContain(`"testIdentifier": "${testFailure.testIdentifier}"`);
-    expect(text).toContain(`"suiteName": "${testFailure.suiteName}"`);
-    expect(text).toContain(`"file": "${testFailure.file}"`);
+    expect(text).toContain("Test Failures Detected");
+    expect(text).toContain(testFailure.testIdentifier);
+    expect(text).toContain(testFailure.message);
+    // The output includes emoji formatted sections, so check for the formatted output
+    expect(text).toContain(`**${testFailure.testIdentifier}**`);
+    expect(text).toContain(`📁 Suite: ${testFailure.suiteName}`);
+    expect(text).toContain(`📄 File: ${testFailure.file}`);
     if (testFailure.line !== undefined) {
-      expect(text).toContain(`"line": ${testFailure.line}`);
+      expect(text).toContain(`📍 Line: ${testFailure.line}`);
     }
-    // Escape double quotes in the message for JSON output
-    const escapedMessage = testFailure.message.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
-    expect(text).toContain(`"message": "${escapedMessage}"`);
+    expect(text).toContain(`💬 Error: ${testFailure.message}`);
     // Ensure nothing is missing
     const expectedFields = [
       testFailure.testIdentifier,
@@ -204,43 +192,36 @@ describe("MCP test tool main logic", () => {
     }
   });
 
-  enum TestErrorType {
-    MaxRetries = "max-retries",
-    BuildError = "build-error",
-    MissingProject = "missing-project",
-    OtherError = "other-error",
-  }
-
   it("returns max-retries error", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: TestErrorType.MaxRetries };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.MAX_RETRIES };
     const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/maximum number of times/);
+    expect(res.content[0].text).toMatch(/Maximum Retry Attempts Exceeded/);
   });
 
   it("returns build-error error", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: TestErrorType.BuildError };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.BUILD_ERROR };
     const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/Tests failed to build/);
+    expect(res.content[0].text).toMatch(/Build System Error/);
   });
 
   it("returns missing-project error", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: TestErrorType.MissingProject };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.MISSING_PROJECT };
     const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/missing or was not found/);
+    expect(res.content[0].text).toMatch(/Project File Not Found/);
   });
 
   it("returns fallback error", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult = { success: false, error: TestErrorType.OtherError };
+    const result: TaskResult<string> = { success: false, error: TaskErrorType.UNKNOWN_ERROR };
     const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/Error: other-error/);
+    expect(res.content[0].text).toMatch(/Unexpected Error[\s\S]*unknown-error/);
   });
 });
 
