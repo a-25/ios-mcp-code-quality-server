@@ -2,7 +2,7 @@ import type { TaskResult } from "./taskOrchestrator.js";
 import type { TestFixOptions } from "./taskOptions.js";
 
 export interface MCPContent {
-  type: 'text';
+  type: "text";
   text: string;
   _meta?: any;
   resource?: any;
@@ -239,7 +239,7 @@ export function formatTestResultResponse(
     );
   } else {
     if (
-      'buildErrors' in result &&
+      "buildErrors" in result &&
       Array.isArray(result.buildErrors) &&
       result.buildErrors.length > 0
     ) {
@@ -258,7 +258,7 @@ export function formatTestResultResponse(
     }
     
     if (
-      'testFailures' in result &&
+      "testFailures" in result &&
       Array.isArray(result.testFailures) &&
       result.testFailures.length > 0
     ) {
