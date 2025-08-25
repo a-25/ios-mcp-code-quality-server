@@ -9,7 +9,8 @@
     "build": "tsc -p tsconfig.build.json",
     "start:prod": "node dist/index.js",
     "lint": "eslint . --ext .ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.11.30",
+    "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "eslint": "^8.56.0",
     "typescript": "^5.4.5",

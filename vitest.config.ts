@@ -6,7 +6,13 @@ export default defineConfig({
     include: ["src/__tests__/**/*.test.ts"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "html"]
+      reporter: ["text", "html"],
+      exclude: [
+        "src/__tests__/**",
+        "**/*.test.ts",
+        "**/node_modules/**",
+        "dist/**"
+      ]
     },
     globals: true
   }
