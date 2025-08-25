@@ -34,8 +34,12 @@ jobs:
     - name: Build project
       run: npm run build
       
-    - name: Run tests
-      run: npm test
+    - name: Run tests with coverage
+      run: |
+        echo "=== Running tests with coverage ==="
+        npm run test:coverage
+        echo ""
+        echo "✅ Test coverage report completed"
       
     - name: Verify server starts
       run: |

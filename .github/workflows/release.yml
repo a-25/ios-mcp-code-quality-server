@@ -24,8 +24,12 @@ jobs:
     - name: Build project
       run: npm run build
       
-    - name: Run tests
-      run: npm test
+    - name: Run tests with coverage
+      run: |
+        echo "=== Running tests with coverage for release validation ==="
+        npm run test:coverage
+        echo ""
+        echo "✅ Release tests passed with coverage validation"
       
     - name: Create release package
       run: |

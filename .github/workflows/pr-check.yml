@@ -25,12 +25,14 @@ jobs:
     - name: Build project
       run: npm run build
       
-    - name: Test status
+    - name: Test status with coverage
       run: |
-        npm test
+        echo "=== Running tests with coverage ==="
+        npm run test:coverage
         TEST_EXIT_CODE=$?
+        echo ""
         if [ $TEST_EXIT_CODE -eq 0 ]; then
-          echo "✅ All tests passed - PR is ready for review"
+          echo "✅ All tests passed with coverage report - PR is ready for review"
         else
           echo "❌ Tests failed - PR blocked"
           exit $TEST_EXIT_CODE
