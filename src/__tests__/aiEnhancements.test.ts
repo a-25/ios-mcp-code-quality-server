@@ -272,13 +272,14 @@ describe('AI Enhancement Features', () => {
         success: false,
         error: TaskErrorType.TEST_FAILURES,
         testFailures: [{
-          testIdentifier: 'Test.withScreenshot',
-          suiteName: 'Test',
-          message: 'UI test failed',
+          testIdentifier: 'MyAppUITests.testLoginButton',
+          suiteName: 'MyAppUITests',
+          message: 'Button with identifier "loginButton" was not found',
           attachments: ['screenshot1.png', 'screenshot2.png'],
-          severity: 'medium' as const,
-          category: 'assertion' as const,
-          suggestions: ['Check UI element visibility']
+          severity: 'high' as const,
+          category: 'element_not_found' as const,
+          isUITest: true,
+          suggestions: ['Check UI element visibility', 'Verify accessibility identifier is correct']
         }],
         buildErrors: [],
         aiSuggestions: ['Update test selectors', 'Add wait conditions'],
@@ -295,13 +296,56 @@ describe('AI Enhancement Features', () => {
       expect(res._meta?.structured?.summary?.totalFailures).toBe(1);
       expect(res._meta?.structured?.failures).toHaveLength(1);
       const failure = res._meta?.structured?.failures?.[0];
-      expect(failure?.test).toBe('Test.withScreenshot');
-      expect(failure?.severity).toBe('medium');
-      expect(failure?.category).toBe('assertion');
+      expect(failure?.test).toBe('MyAppUITests.testLoginButton');
+      expect(failure?.severity).toBe('high');
+      expect(failure?.category).toBe('element_not_found');
       expect(failure?.suggestions).toContain('Check UI element visibility');
       
       // Check AI suggestions from TaskResult
       expect(res._meta?.structured?.actionable?.suggestions).toEqual(['Update test selectors', 'Add wait conditions']);
+    });
+
+    it('should auto-detect UI tests and categorize appropriately', () => {
+      // Simulate what would happen after testRunner processes a UI test failure
+      const uiTestResult: TaskResult<string> = {
+        success: false,
+        error: TaskErrorType.TEST_FAILURES,
+        testFailures: [{
+          testIdentifier: 'LoginUITests.testButtonTap',
+          suiteName: 'LoginUITests',
+          message: 'Element not found: Could not locate button with identifier "submit"',
+          attachments: ['failure_screenshot.png'],
+          // Pre-categorized as would happen in testRunner processing
+          isUITest: true,
+          category: 'element_not_found' as const,
+          severity: 'high' as const,
+          suggestions: [
+            'Verify the element exists in the current view hierarchy',
+            'Check if the element accessibility identifier is correct'
+          ]
+        }],
+        buildErrors: [],
+        message: 'UI test failure with auto-detection'
+      };
+
+      const res: AIFriendlyTestResponse = formatTestResultResponse(
+        baseInput,
+        getValidation(baseInput),
+        uiTestResult
+      );
+
+      // Verify UI test was properly categorized and formatted
+      const failure = res._meta?.structured?.failures?.[0];
+      expect(failure?.category).toBe('element_not_found');
+      expect(failure?.severity).toBe('high');
+      
+      // Should have UI-specific suggestions
+      expect(failure?.suggestions).toContain('Verify the element exists in the current view hierarchy');
+      expect(failure?.suggestions).toContain('Check if the element accessibility identifier is correct');
+      
+      // Should show screenshots in formatted output
+      expect(res.content[0].text).toContain('📸 Screenshots:');
+      expect(res.content[0].text).toContain('failure_screenshot.png');
     });
   });
 });
