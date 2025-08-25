@@ -137,8 +137,8 @@ describe('UI Test Support', () => {
         testIdentifier: 'InteractionUITests.testSwipeGesture',
         suiteName: 'InteractionUITests',
         message: 'Failed to perform swipe gesture on table view',
-        severity: 'medium',
-        category: 'ui_interaction',
+        severity: TestFailureSeverity.MEDIUM,
+        category: TestFailureCategory.UI_INTERACTION,
         isUITest: true,
         suggestions: [
           'Ensure element is hittable before attempting interaction',
