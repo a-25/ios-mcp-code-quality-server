@@ -362,6 +362,14 @@ export function formatTestResultResponse(
               });
             }
 
+            // Include attachments (screenshots) if available
+            if (failure.attachments && failure.attachments.length > 0) {
+              failureText += `   📸 Screenshots:\n`;
+              failure.attachments.forEach((attachment: string) => {
+                failureText += `      • ${attachment}\n`;
+              });
+            }
+
             // Include source code context if available
             if (failure.sourceContext?.testCode) {
               failureText += `   📝 **Test Code:**\n\`\`\`swift\n${failure.sourceContext.testCode}\n\`\`\`\n`;

@@ -19,6 +19,11 @@ export enum TestFailureCategory {
   BUILD = 'build',
   SETUP = 'setup',
   TEARDOWN = 'teardown',
+  // UI Test specific categories
+  ELEMENT_NOT_FOUND = 'element_not_found',
+  ACCESSIBILITY = 'accessibility', 
+  UI_INTERACTION = 'ui_interaction',
+  UI_TIMING = 'ui_timing',
   OTHER = 'other'
 }
 
@@ -38,35 +43,114 @@ async function cleanupRunDir(runDir: string): Promise<void> {
   } catch { }
 }
 
+// Helper function to detect if this is a UI test
+function detectUITest(failure: TestFailure): boolean {
+  const suiteName = (failure.suiteName || '').toLowerCase();
+  const testIdentifier = (failure.testIdentifier || '').toLowerCase();
+  const message = (failure.message || '').toLowerCase();
+  const stack = (failure.stack || '').toLowerCase();
+  const combined = `${suiteName} ${testIdentifier} ${message} ${stack}`;
+  
+  // Check for UI test indicators
+  const uiTestIndicators = [
+    'ui',
+    'xcui', 
+    'xctunableapplication',
+    'xcelement',
+    'element not found',
+    'element does not exist',
+    'accessibility',
+    'view not found',
+    'button not found',
+    'text field not found',
+    'navigation bar',
+    'alert not found',
+    'touch',
+    'tap',
+    'swipe',
+    'scroll',
+    'keyboard',
+    'animation'
+  ];
+  
+  return uiTestIndicators.some(indicator => combined.includes(indicator));
+}
+
 // Helper function to categorize test failures
 function categorizeFailure(failure: TestFailure): { category: TestFailureCategory; severity: TestFailureSeverity } {
   const message = (failure.message || '').toLowerCase();
   const stack = (failure.stack || '').toLowerCase();
   const combined = `${message} ${stack}`;
+  
+  // First detect if this is a UI test
+  const isUITest = detectUITest(failure);
 
   // Determine category
   let category: TestFailureCategory = TestFailureCategory.OTHER;
-  if (combined.includes('assertion') || combined.includes('expect') || combined.includes('assert')) {
-    category = TestFailureCategory.ASSERTION;
-  } else if (combined.includes('crash') || combined.includes('sigabrt') || combined.includes('signal')) {
-    category = TestFailureCategory.CRASH;
-  } else if (combined.includes('timeout') || combined.includes('timed out')) {
-    category = TestFailureCategory.TIMEOUT;
-  } else if (combined.includes('build') || combined.includes('compile')) {
-    category = TestFailureCategory.BUILD;
-  } else if (combined.includes('setup') || combined.includes('before')) {
-    category = TestFailureCategory.SETUP;
-  } else if (combined.includes('teardown') || combined.includes('after')) {
-    category = TestFailureCategory.TEARDOWN;
+  
+  // UI Test specific categorization
+  if (isUITest) {
+    if (combined.includes('element not found') || 
+        combined.includes('element does not exist') || 
+        combined.includes('view not found') ||
+        combined.includes('button not found') ||
+        combined.includes('text field not found') ||
+        combined.includes('navigation bar') ||
+        combined.includes('alert not found')) {
+      category = TestFailureCategory.ELEMENT_NOT_FOUND;
+    } else if (combined.includes('accessibility') || 
+               combined.includes('accessible') ||
+               combined.includes('accessibility identifier') ||
+               combined.includes('accessibility label')) {
+      category = TestFailureCategory.ACCESSIBILITY;
+    } else if (combined.includes('touch') || 
+               combined.includes('tap') || 
+               combined.includes('swipe') ||
+               combined.includes('scroll') ||
+               combined.includes('keyboard') ||
+               combined.includes('interaction') ||
+               combined.includes('gesture')) {
+      category = TestFailureCategory.UI_INTERACTION;
+    } else if (combined.includes('animation') || 
+               combined.includes('wait') ||
+               combined.includes('appear') ||
+               combined.includes('disappear') ||
+               combined.includes('visible') ||
+               combined.includes('hittable')) {
+      category = TestFailureCategory.UI_TIMING;
+    }
+  }
+  
+  // Standard categorization (applies to both UI and unit tests)
+  if (category === TestFailureCategory.OTHER) {
+    if (combined.includes('assertion') || combined.includes('expect') || combined.includes('assert')) {
+      category = TestFailureCategory.ASSERTION;
+    } else if (combined.includes('crash') || combined.includes('sigabrt') || combined.includes('signal')) {
+      category = TestFailureCategory.CRASH;
+    } else if (combined.includes('timeout') || combined.includes('timed out')) {
+      category = TestFailureCategory.TIMEOUT;
+    } else if (combined.includes('build') || combined.includes('compile')) {
+      category = TestFailureCategory.BUILD;
+    } else if (combined.includes('setup') || combined.includes('before')) {
+      category = TestFailureCategory.SETUP;
+    } else if (combined.includes('teardown') || combined.includes('after')) {
+      category = TestFailureCategory.TEARDOWN;
+    }
   }
 
   // Determine severity
   let severity: TestFailureSeverity = TestFailureSeverity.MEDIUM;
   if (category === TestFailureCategory.CRASH || combined.includes('fatal') || combined.includes('abort')) {
     severity = TestFailureSeverity.CRITICAL;
-  } else if (category === TestFailureCategory.BUILD || category === TestFailureCategory.SETUP || combined.includes('error')) {
+  } else if (category === TestFailureCategory.BUILD || 
+             category === TestFailureCategory.SETUP || 
+             category === TestFailureCategory.ELEMENT_NOT_FOUND ||
+             combined.includes('error')) {
     severity = TestFailureSeverity.HIGH;
-  } else if (category === TestFailureCategory.TIMEOUT || combined.includes('warning')) {
+  } else if (category === TestFailureCategory.TIMEOUT || 
+             category === TestFailureCategory.UI_TIMING ||
+             category === TestFailureCategory.ACCESSIBILITY ||
+             combined.includes('warning')) {
     severity = TestFailureSeverity.LOW;
   }
 
@@ -78,22 +162,68 @@ function generateFailureSuggestions(failure: TestFailure): string[] {
   const suggestions: string[] = [];
   const message = (failure.message || '').toLowerCase();
   const category = failure.category || TestFailureCategory.OTHER;
+  const isUITest = failure.isUITest || detectUITest(failure);
 
   switch (category) {
+    case TestFailureCategory.ELEMENT_NOT_FOUND:
+      suggestions.push("Verify the element exists in the current view hierarchy");
+      suggestions.push("Check if the element accessibility identifier is correct");
+      suggestions.push("Add explicit wait for element to appear before interacting");
+      suggestions.push("Ensure the test navigates to the correct screen first");
+      suggestions.push("Check if element is covered by other UI elements or keyboard");
+      break;
+    case TestFailureCategory.ACCESSIBILITY:
+      suggestions.push("Verify accessibility identifiers are set on UI elements");
+      suggestions.push("Check that accessibility labels are descriptive and unique");
+      suggestions.push("Ensure VoiceOver accessibility is properly configured");
+      suggestions.push("Add accessibility traits to help identify element types");
+      break;
+    case TestFailureCategory.UI_INTERACTION:
+      suggestions.push("Ensure element is hittable before attempting interaction");
+      suggestions.push("Add wait conditions for element to become enabled");
+      suggestions.push("Check if element is obstructed by other views");
+      suggestions.push("Verify touch coordinates are within element bounds");
+      suggestions.push("Try using accessibility-based selectors instead of coordinates");
+      break;
+    case TestFailureCategory.UI_TIMING:
+      suggestions.push("Add explicit waits for animations to complete");
+      suggestions.push("Use expectation-based waiting instead of fixed delays");
+      suggestions.push("Check if network requests are completing before UI updates");
+      suggestions.push("Verify view controller lifecycle completion");
+      suggestions.push("Add conditions to wait for element state changes");
+      break;
     case TestFailureCategory.ASSERTION:
-      suggestions.push("Review the assertion logic and expected vs actual values");
-      suggestions.push("Check if the test data setup is correct");
-      suggestions.push("Verify the test expectations match the actual behavior");
+      if (isUITest) {
+        suggestions.push("Verify UI state matches expected conditions");
+        suggestions.push("Check element properties (text, enabled state, visibility)");
+        suggestions.push("Add screenshots to understand actual UI state");
+        suggestions.push("Ensure test data setup produces expected UI results");
+      } else {
+        suggestions.push("Review the assertion logic and expected vs actual values");
+        suggestions.push("Check if the test data setup is correct");
+        suggestions.push("Verify the test expectations match the actual behavior");
+      }
       break;
     case TestFailureCategory.CRASH:
       suggestions.push("Check for nil pointer dereferences or memory issues");
       suggestions.push("Review stack trace for the exact crash location");
       suggestions.push("Add null checks and defensive programming");
+      if (isUITest) {
+        suggestions.push("Verify UI operations are performed on main thread");
+        suggestions.push("Check for force unwrapping of optional UI elements");
+      }
       break;
     case TestFailureCategory.TIMEOUT:
-      suggestions.push("Increase timeout values if the operation is legitimately slow");
-      suggestions.push("Check for infinite loops or blocking operations");
-      suggestions.push("Use async/await patterns properly in tests");
+      if (isUITest) {
+        suggestions.push("Increase timeout values for UI animations");
+        suggestions.push("Check for blocking UI operations or network calls");
+        suggestions.push("Verify element appears within expected timeframe");
+        suggestions.push("Add conditions for waiting on UI state changes");
+      } else {
+        suggestions.push("Increase timeout values if the operation is legitimately slow");
+        suggestions.push("Check for infinite loops or blocking operations");
+        suggestions.push("Use async/await patterns properly in tests");
+      }
       break;
     case TestFailureCategory.BUILD:
       suggestions.push("Fix compilation errors in test or source code");
@@ -105,11 +235,22 @@ function generateFailureSuggestions(failure: TestFailure): string[] {
       suggestions.push("Review test setup and cleanup code");
       suggestions.push("Ensure proper initialization of test dependencies");
       suggestions.push("Check for resource cleanup issues");
+      if (isUITest) {
+        suggestions.push("Reset app state between UI tests");
+        suggestions.push("Clear app data or reinstall app if needed");
+      }
       break;
     default:
-      suggestions.push("Examine the error message and stack trace carefully");
-      suggestions.push("Add debugging statements to understand the failure");
-      suggestions.push("Consider breaking down the test into smaller parts");
+      if (isUITest) {
+        suggestions.push("Examine UI test error message and screenshots");
+        suggestions.push("Add debugging by taking screenshots at failure point");
+        suggestions.push("Break down complex UI interactions into smaller steps");
+        suggestions.push("Verify app is in expected state before test starts");
+      } else {
+        suggestions.push("Examine the error message and stack trace carefully");
+        suggestions.push("Add debugging statements to understand the failure");
+        suggestions.push("Consider breaking down the test into smaller parts");
+      }
   }
 
   // Add specific suggestions based on message content
@@ -120,7 +261,12 @@ function generateFailureSuggestions(failure: TestFailure): string[] {
     suggestions.push("Verify array bounds and index calculations");
   }
   if (message.includes('network') || message.includes('url')) {
-    suggestions.push("Check network connectivity and URL validity in tests");
+    if (isUITest) {
+      suggestions.push("Mock network responses for consistent UI test results");
+      suggestions.push("Add wait conditions for network-dependent UI updates");
+    } else {
+      suggestions.push("Check network connectivity and URL validity in tests");
+    }
   }
 
   return suggestions;
@@ -152,6 +298,15 @@ function generateTestRunSuggestions(result: TestRunResult): string[] {
     }
     if (categories[TestFailureCategory.BUILD]) {
       suggestions.push("Fix build-related test failures to ensure clean compilation");
+    }
+    if (categories[TestFailureCategory.ELEMENT_NOT_FOUND]) {
+      suggestions.push("Priority: Fix UI element detection issues for reliable UI tests");
+    }
+    if (categories[TestFailureCategory.UI_TIMING]) {
+      suggestions.push("Address UI timing issues by adding proper wait conditions");
+    }
+    if (categories[TestFailureCategory.ACCESSIBILITY]) {
+      suggestions.push("Improve accessibility setup for better UI test reliability");
     }
   }
   
@@ -207,11 +362,12 @@ export type TestFailure = {
   attachments?: string[]; // paths to screenshots
   // Enhanced fields for AI agent support
   severity?: TestFailureSeverity | 'critical' | 'high' | 'medium' | 'low';
-  category?: TestFailureCategory | 'assertion' | 'crash' | 'timeout' | 'build' | 'setup' | 'teardown' | 'other';
+  category?: TestFailureCategory | 'assertion' | 'crash' | 'timeout' | 'build' | 'setup' | 'teardown' | 'element_not_found' | 'accessibility' | 'ui_interaction' | 'ui_timing' | 'other';
   sourceContext?: TestSourceContext;
   suggestions?: string[];
   duration?: number; // test duration in seconds
   platform?: string; // iOS version, simulator name, etc.
+  isUITest?: boolean; // Auto-detected UI test flag
 };
 
 async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailure[]> {
@@ -242,7 +398,8 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
           platform: undefined // Will be set later from action context
         };
 
-        // Enhance with categorization and suggestions
+        // Enhance with UI test detection, categorization and suggestions
+        baseFailure.isUITest = detectUITest(baseFailure);
         const { category, severity } = categorizeFailure(baseFailure);
         baseFailure.category = category;
         baseFailure.severity = severity;
@@ -281,7 +438,8 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
           attachments: []
         };
 
-        // Enhance with categorization and suggestions
+        // Enhance with UI test detection, categorization and suggestions
+        baseFailure.isUITest = detectUITest(baseFailure);
         const { category, severity } = categorizeFailure(baseFailure);
         baseFailure.category = category;
         baseFailure.severity = severity;
