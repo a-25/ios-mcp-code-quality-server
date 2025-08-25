@@ -26,8 +26,8 @@ describe('UI Test Support', () => {
         file: '/path/to/LoginFlowUITests.swift',
         line: 15,
         message: 'Button not found on screen',
-        severity: 'high',
-        category: 'element_not_found',
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ELEMENT_NOT_FOUND,
         isUITest: true,
         suggestions: ['Verify the element exists in the current view hierarchy']
       };
@@ -41,7 +41,7 @@ describe('UI Test Support', () => {
       const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
       
       expect(response._meta?.structured?.failures?.[0]?.test).toBe('LoginFlowUITests.testSuccessfulLogin');
-      expect(response._meta?.structured?.failures?.[0]?.category).toBe('element_not_found');
+      expect(response._meta?.structured?.failures?.[0]?.category).toBe(TestFailureCategory.ELEMENT_NOT_FOUND);
       expect(response.content[0].text).toContain('Button not found on screen');
     });
 
@@ -51,14 +51,14 @@ describe('UI Test Support', () => {
         suiteName: 'AppUITests',
         message: 'XCUIElement with identifier "loginButton" was not found',
         stack: 'XCTContext.runActivity(named:block:) -> XCUIApplication.launch()',
-        severity: 'high',
-        category: 'element_not_found',
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ELEMENT_NOT_FOUND,
         isUITest: true,
         suggestions: ['Check if the element accessibility identifier is correct']
       };
 
       expect(uiTestFailure.isUITest).toBe(true);
-      expect(uiTestFailure.category).toBe('element_not_found');
+      expect(uiTestFailure.category).toBe(TestFailureCategory.ELEMENT_NOT_FOUND);
     });
 
     it('should detect UI tests by error message patterns', () => {
@@ -66,14 +66,14 @@ describe('UI Test Support', () => {
         testIdentifier: 'SampleTests.testButtonTap',
         suiteName: 'SampleTests',
         message: 'Failed to tap element at coordinates (100, 200)',
-        severity: 'medium',
-        category: 'ui_interaction',
+        severity: TestFailureSeverity.MEDIUM,
+        category: TestFailureCategory.UI_INTERACTION,
         isUITest: true,
         suggestions: ['Ensure element is hittable before attempting interaction']
       };
 
       expect(uiTestFailure.isUITest).toBe(true);
-      expect(uiTestFailure.category).toBe('ui_interaction');
+      expect(uiTestFailure.category).toBe(TestFailureCategory.UI_INTERACTION);
     });
   });
 
@@ -83,8 +83,8 @@ describe('UI Test Support', () => {
         testIdentifier: 'CheckoutUITests.testPurchaseButton',
         suiteName: 'CheckoutUITests',
         message: 'Button with identifier "purchaseButton" does not exist',
-        severity: 'high',
-        category: 'element_not_found',
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ELEMENT_NOT_FOUND,
         isUITest: true,
         suggestions: [
           'Verify the element exists in the current view hierarchy',
@@ -100,8 +100,8 @@ describe('UI Test Support', () => {
 
       const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
       
-      expect(response._meta?.structured?.failures?.[0]?.category).toBe('element_not_found');
-      expect(response._meta?.structured?.failures?.[0]?.severity).toBe('high');
+      expect(response._meta?.structured?.failures?.[0]?.category).toBe(TestFailureCategory.ELEMENT_NOT_FOUND);
+      expect(response._meta?.structured?.failures?.[0]?.severity).toBe(TestFailureSeverity.HIGH);
       expect(response._meta?.structured?.failures?.[0]?.suggestions).toContain('Verify the element exists in the current view hierarchy');
     });
 
@@ -110,8 +110,8 @@ describe('UI Test Support', () => {
         testIdentifier: 'AccessibilityUITests.testVoiceOverSupport',
         suiteName: 'AccessibilityUITests',
         message: 'Element missing accessibility identifier for automated testing',
-        severity: 'low',
-        category: 'accessibility',
+        severity: TestFailureSeverity.LOW,
+        category: TestFailureCategory.ACCESSIBILITY,
         isUITest: true,
         suggestions: [
           'Verify accessibility identifiers are set on UI elements',
@@ -127,8 +127,8 @@ describe('UI Test Support', () => {
 
       const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
       
-      expect(response._meta?.structured?.failures?.[0]?.category).toBe('accessibility');
-      expect(response._meta?.structured?.failures?.[0]?.severity).toBe('low');
+      expect(response._meta?.structured?.failures?.[0]?.category).toBe(TestFailureCategory.ACCESSIBILITY);
+      expect(response._meta?.structured?.failures?.[0]?.severity).toBe(TestFailureSeverity.LOW);
       expect(response._meta?.structured?.failures?.[0]?.suggestions).toContain('Verify accessibility identifiers are set on UI elements');
     });
 
@@ -154,8 +154,8 @@ describe('UI Test Support', () => {
 
       const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
       
-      expect(response._meta?.structured?.failures?.[0]?.category).toBe('ui_interaction');
-      expect(response._meta?.structured?.failures?.[0]?.severity).toBe('medium');
+      expect(response._meta?.structured?.failures?.[0]?.category).toBe(TestFailureCategory.UI_INTERACTION);
+      expect(response._meta?.structured?.failures?.[0]?.severity).toBe(TestFailureSeverity.MEDIUM);
       expect(response._meta?.structured?.failures?.[0]?.suggestions).toContain('Ensure element is hittable before attempting interaction');
     });
 

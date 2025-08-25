@@ -56,10 +56,42 @@ function detectUITest(failure: TestFailure): boolean {
     'ui',
     'xcui', 
     'xctunableapplication',
-    'xcelement',
+    'xcuielement',
+    'xcuiapplication',
+    'xcuielementquery',
+    'xctestexpectation',
+    'xctnspredicateexpectation',
     'element not found',
     'element does not exist',
-    'accessibility',
+    'no matches found for',
+    'failed to find element',
+    'unable to find element',
+    'no element matching',
+    'element query failed',
+    'does not exist in the current page',
+    'waitforexistence timeout',
+    'element not accessible',
+    'accessibility identifier',
+    'accessibility label',
+    'voiceover element',
+    'accessibility traits',
+    'unable to find accessible element',
+    'tap failed',
+    'touch failed',
+    'swipe failed',
+    'unable to tap',
+    'unable to touch',
+    'element is not hittable',
+    'element is not enabled',
+    'gesture failed',
+    'interaction failed',
+    'could not perform action',
+    'animation not completed',
+    'transition timeout',
+    'app not responding',
+    'ui not updated',
+    'view not visible',
+    'element not stable',
     'view not found',
     'button not found',
     'text field not found',
@@ -73,7 +105,7 @@ function detectUITest(failure: TestFailure): boolean {
     'animation'
   ];
   
-  return uiTestIndicators.some(indicator => combined.includes(indicator));
+  return uiTestIndicators.some(indicator => combined.includes(indicator.toLowerCase()));
 }
 
 // Helper function to categorize test failures
@@ -90,50 +122,100 @@ function categorizeFailure(failure: TestFailure): { category: TestFailureCategor
   
   // UI Test specific categorization
   if (isUITest) {
-    if (combined.includes('element not found') || 
-        combined.includes('element does not exist') || 
-        combined.includes('view not found') ||
-        combined.includes('button not found') ||
-        combined.includes('text field not found') ||
-        combined.includes('navigation bar') ||
-        combined.includes('alert not found')) {
+    const elementNotFoundPatterns = [
+      'element not found',
+      'element does not exist', 
+      'view not found',
+      'button not found',
+      'text field not found',
+      'navigation bar',
+      'alert not found',
+      'no matches found for',
+      'failed to find element',
+      'unable to find element',
+      'no element matching',
+      'element query failed',
+      'does not exist in the current page',
+      'waitforexistence timeout',
+      'element not accessible'
+    ];
+    
+    const accessibilityPatterns = [
+      'accessibility',
+      'accessible',
+      'accessibility identifier',
+      'accessibility label',
+      'voiceover element',
+      'accessibility traits',
+      'unable to find accessible element'
+    ];
+    
+    const uiInteractionPatterns = [
+      'touch',
+      'tap',
+      'swipe',
+      'scroll',
+      'keyboard',
+      'interaction',
+      'gesture',
+      'tap failed',
+      'touch failed',
+      'swipe failed',
+      'unable to tap',
+      'unable to touch',
+      'element is not hittable',
+      'element is not enabled',
+      'gesture failed',
+      'interaction failed',
+      'could not perform action'
+    ];
+    
+    const uiTimingPatterns = [
+      'animation',
+      'wait',
+      'appear',
+      'disappear',
+      'visible',
+      'hittable',
+      'animation not completed',
+      'transition timeout',
+      'app not responding',
+      'ui not updated',
+      'view not visible',
+      'element not stable'
+    ];
+    
+    if (elementNotFoundPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.ELEMENT_NOT_FOUND;
-    } else if (combined.includes('accessibility') || 
-               combined.includes('accessible') ||
-               combined.includes('accessibility identifier') ||
-               combined.includes('accessibility label')) {
+    } else if (accessibilityPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.ACCESSIBILITY;
-    } else if (combined.includes('touch') || 
-               combined.includes('tap') || 
-               combined.includes('swipe') ||
-               combined.includes('scroll') ||
-               combined.includes('keyboard') ||
-               combined.includes('interaction') ||
-               combined.includes('gesture')) {
+    } else if (uiInteractionPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.UI_INTERACTION;
-    } else if (combined.includes('animation') || 
-               combined.includes('wait') ||
-               combined.includes('appear') ||
-               combined.includes('disappear') ||
-               combined.includes('visible') ||
-               combined.includes('hittable')) {
+    } else if (uiTimingPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.UI_TIMING;
     }
   }
   
   // Standard categorization (applies to both UI and unit tests)
   if (category === TestFailureCategory.OTHER) {
-    if (combined.includes('assertion') || combined.includes('expect') || combined.includes('assert')) {
+    const assertionPatterns = ['assertion', 'expect', 'assert'];
+    const crashPatterns = ['crash', 'sigabrt', 'signal'];
+    const timeoutPatterns = ['timeout', 'timed out'];
+    const buildPatterns = ['build', 'compile'];
+    const setupPatterns = ['setup', 'before'];
+    const teardownPatterns = ['teardown', 'after'];
+    
+    if (assertionPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.ASSERTION;
-    } else if (combined.includes('crash') || combined.includes('sigabrt') || combined.includes('signal')) {
+    } else if (crashPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.CRASH;
-    } else if (combined.includes('timeout') || combined.includes('timed out')) {
+    } else if (timeoutPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.TIMEOUT;
-    } else if (combined.includes('build') || combined.includes('compile')) {
+    } else if (buildPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.BUILD;
-    } else if (combined.includes('setup') || combined.includes('before')) {
+    } else if (setupPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.SETUP;
-    } else if (combined.includes('teardown') || combined.includes('after')) {
+    } else if (teardownPatterns.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.TEARDOWN;
     }
   }
@@ -361,14 +443,61 @@ export type TestFailure = {
   stack?: string;
   attachments?: string[]; // paths to screenshots
   // Enhanced fields for AI agent support
-  severity?: TestFailureSeverity | 'critical' | 'high' | 'medium' | 'low';
-  category?: TestFailureCategory | 'assertion' | 'crash' | 'timeout' | 'build' | 'setup' | 'teardown' | 'element_not_found' | 'accessibility' | 'ui_interaction' | 'ui_timing' | 'other';
+  severity: TestFailureSeverity;
+  category: TestFailureCategory;
   sourceContext?: TestSourceContext;
   suggestions?: string[];
   duration?: number; // test duration in seconds
   platform?: string; // iOS version, simulator name, etc.
-  isUITest?: boolean; // Auto-detected UI test flag
+  isUITest: boolean; // Auto-detected UI test flag
 };
+
+// Helper function to create a complete TestFailure object with all required fields
+function createTestFailure(
+  testIdentifier: string,
+  suiteName: string,
+  options: {
+    file?: string;
+    line?: number;
+    message?: string;
+    stack?: string;
+    attachments?: string[];
+    duration?: number;
+    platform?: string;
+  }
+): TestFailure {
+  // Create initial failure object
+  const baseFailure = {
+    testIdentifier,
+    suiteName,
+    file: options.file,
+    line: options.line,
+    message: options.message,
+    stack: options.stack,
+    attachments: options.attachments || [],
+    duration: options.duration,
+    platform: options.platform,
+    sourceContext: undefined,
+    suggestions: [] as string[]
+  };
+
+  // Detect if this is a UI test
+  const isUITest = detectUITest(baseFailure as any);
+  
+  // Categorize the failure
+  const { category, severity } = categorizeFailure(baseFailure as any);
+  
+  // Generate suggestions
+  const suggestions = generateFailureSuggestions({...baseFailure, isUITest, category, severity} as TestFailure);
+
+  return {
+    ...baseFailure,
+    severity,
+    category,
+    isUITest,
+    suggestions
+  };
+}
 
 async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailure[]> {
   const failures: TestFailure[] = [];
@@ -386,24 +515,19 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
             }
           }
         }
-        const baseFailure: TestFailure = {
-          testIdentifier: testCase.identifier || testCase.name,
+        const baseFailure = createTestFailure(
+          testCase.identifier || testCase.name,
           suiteName,
-          file: testCase.fileName,
-          line: testCase.lineNumber,
-          message: testCase.failureMessage,
-          stack: testCase.failureSummaries?._values?.[0]?.message,
-          attachments,
-          duration: testCase.duration || undefined,
-          platform: undefined // Will be set later from action context
-        };
-
-        // Enhance with UI test detection, categorization and suggestions
-        baseFailure.isUITest = detectUITest(baseFailure);
-        const { category, severity } = categorizeFailure(baseFailure);
-        baseFailure.category = category;
-        baseFailure.severity = severity;
-        baseFailure.suggestions = generateFailureSuggestions(baseFailure);
+          {
+            file: testCase.fileName,
+            line: testCase.lineNumber,
+            message: testCase.failureMessage,
+            stack: testCase.failureSummaries?._values?.[0]?.message,
+            attachments,
+            duration: testCase.duration || undefined,
+            platform: undefined // Will be set later from action context
+          }
+        );
 
         failures.push(baseFailure);
       }
@@ -428,22 +552,17 @@ async function parseXcresultForFailures(xcresultPath: string): Promise<TestFailu
             line = parseInt(match[2], 10);
           }
         }
-        const baseFailure: TestFailure = {
-          testIdentifier: issue.testCaseName?._value || "UnknownTest",
-          suiteName: "",
-          file,
-          line,
-          message: issue.message?._value || "",
-          stack: undefined,
-          attachments: []
-        };
-
-        // Enhance with UI test detection, categorization and suggestions
-        baseFailure.isUITest = detectUITest(baseFailure);
-        const { category, severity } = categorizeFailure(baseFailure);
-        baseFailure.category = category;
-        baseFailure.severity = severity;
-        baseFailure.suggestions = generateFailureSuggestions(baseFailure);
+        const baseFailure = createTestFailure(
+          issue.testCaseName?._value || "UnknownTest",
+          "",
+          {
+            file,
+            line,
+            message: issue.message?._value || "",
+            stack: undefined,
+            attachments: []
+          }
+        );
 
         failures.push(baseFailure);
       }
