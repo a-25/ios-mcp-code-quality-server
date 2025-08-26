@@ -16,6 +16,7 @@ import { formatTestResultResponse } from "../core/formatTestResultResponse.js";
 import type { TaskResult } from "../core/taskOrchestrator.js";
 import { TaskErrorType } from "../core/taskOrchestrator.js";
 import type { TestFixOptions } from "../core/taskOptions.js";
+import { TestFailureCategory, TestFailureSeverity } from "../core/testRunner.js";
 
 describe("MCP test tool main logic", () => {
   it("returns build error and no test failures when build fails", async () => {
@@ -80,7 +81,10 @@ describe("MCP test tool main logic", () => {
       line,
       message,
       stack,
-      attachments
+      attachments,
+      severity: TestFailureSeverity.MEDIUM,
+      category: TestFailureCategory.ASSERTION,
+      isUITest: false
     };
     const buildErrors = ["Build failed", "Linker error"];
     const result: TaskResult<string> = {
@@ -158,7 +162,10 @@ describe("MCP test tool main logic", () => {
       line,
       message,
       stack,
-      attachments
+      attachments,
+      severity: TestFailureSeverity.MEDIUM,
+      category: TestFailureCategory.ASSERTION,
+      isUITest: false
     };
     const result: TaskResult<string> = {
       success: false,

@@ -3,6 +3,7 @@ import { formatTestResultResponse, type AIFriendlyTestResponse } from '../core/f
 import type { TestFixOptions } from '../core/taskOptions.js';
 import type { TaskResult } from '../core/taskOrchestrator.js';
 import { TaskErrorType } from '../core/taskOrchestrator.js';
+import { TestFailureCategory, TestFailureSeverity } from '../core/testRunner.js';
 
 describe('AI Enhancement Features', () => {
   const baseInput: TestFixOptions = {
@@ -27,8 +28,9 @@ describe('AI Enhancement Features', () => {
         message: 'XCTAssertEqual failed: expected "success" but got "failure"',
         stack: 'stack trace here',
         attachments: [],
-        severity: 'critical' as const,
-        category: 'assertion' as const,
+        severity: TestFailureSeverity.CRITICAL,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
         suggestions: ['Check the implementation logic', 'Verify test data setup']
       };
 
@@ -115,8 +117,9 @@ describe('AI Enhancement Features', () => {
         testIdentifier: 'TestCase.testAssertion',
         suiteName: 'TestCase',
         message: 'XCTAssertEqual failed',
-        severity: 'medium' as const,
-        category: 'assertion' as const,
+        severity: TestFailureSeverity.MEDIUM,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
         suggestions: ['Review assertion logic']
       };
 
@@ -142,8 +145,9 @@ describe('AI Enhancement Features', () => {
         testIdentifier: 'TestCase.testCrash',
         suiteName: 'TestCase',
         message: 'Test crashed with SIGABRT',
-        severity: 'critical' as const,
-        category: 'crash' as const,
+        severity: TestFailureSeverity.CRITICAL,
+        category: TestFailureCategory.CRASH,
+        isUITest: false,
         suggestions: ['Check for nil pointer dereferences', 'Add defensive programming']
       };
 
@@ -173,8 +177,9 @@ describe('AI Enhancement Features', () => {
         file: '/path/to/test.swift',
         line: 123,
         message: 'Test failed unexpectedly',
-        severity: 'high' as const,
-        category: 'assertion' as const,
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
         suggestions: ['Check implementation', 'Verify test data']
       };
 
@@ -213,6 +218,9 @@ describe('AI Enhancement Features', () => {
           testIdentifier: 'Test.failing',
           suiteName: 'Test',
           message: 'Assertion failed',
+          severity: TestFailureSeverity.MEDIUM,
+          category: TestFailureCategory.ASSERTION,
+          isUITest: false,
           suggestions: ['Fix the logic']
         }],
         buildErrors: []
@@ -276,8 +284,8 @@ describe('AI Enhancement Features', () => {
           suiteName: 'MyAppUITests',
           message: 'Button with identifier "loginButton" was not found',
           attachments: ['screenshot1.png', 'screenshot2.png'],
-          severity: 'high' as const,
-          category: 'element_not_found' as const,
+          severity: TestFailureSeverity.HIGH,
+          category: TestFailureCategory.ELEMENT_NOT_FOUND,
           isUITest: true,
           suggestions: ['Check UI element visibility', 'Verify accessibility identifier is correct']
         }],
@@ -317,8 +325,8 @@ describe('AI Enhancement Features', () => {
           attachments: ['failure_screenshot.png'],
           // Pre-categorized as would happen in testRunner processing
           isUITest: true,
-          category: 'element_not_found' as const,
-          severity: 'high' as const,
+          category: TestFailureCategory.ELEMENT_NOT_FOUND,
+          severity: TestFailureSeverity.HIGH,
           suggestions: [
             'Verify the element exists in the current view hierarchy',
             'Check if the element accessibility identifier is correct'

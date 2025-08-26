@@ -11,7 +11,10 @@ describe('UI Test Auto-Detection Logic', () => {
       const testFailure: TestFailure = {
         testIdentifier: 'LoginUITests.testSuccessfulLogin',
         suiteName: 'LoginUITests',
-        message: 'Button tap failed'
+        message: 'Button tap failed',
+        severity: TestFailureSeverity.MEDIUM,
+        category: TestFailureCategory.UI_INTERACTION,
+        isUITest: true
       };
 
       // The detectUITest function should identify this as a UI test based on suiteName
@@ -24,7 +27,10 @@ describe('UI Test Auto-Detection Logic', () => {
         testIdentifier: 'MyAppTests.testXCUIElementTap',
         suiteName: 'MyAppTests',
         message: 'XCUIElement with identifier "loginButton" was not found',
-        stack: 'XCUIApplication.launch() -> XCUIElement.tap()'
+        stack: 'XCUIApplication.launch() -> XCUIElement.tap()',
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ELEMENT_NOT_FOUND,
+        isUITest: true
       };
 
       // Should be detected as UI test due to XCUIElement in message and stack
@@ -37,22 +43,34 @@ describe('UI Test Auto-Detection Logic', () => {
         {
           testIdentifier: 'Test.elementNotFound',
           suiteName: 'Test',
-          message: 'element not found on screen'
+          message: 'element not found on screen',
+          severity: TestFailureSeverity.HIGH,
+          category: TestFailureCategory.ELEMENT_NOT_FOUND,
+          isUITest: true
         },
         {
           testIdentifier: 'Test.accessibilityIssue', 
           suiteName: 'Test',
-          message: 'accessibility identifier missing'
+          message: 'accessibility identifier missing',
+          severity: TestFailureSeverity.LOW,
+          category: TestFailureCategory.ACCESSIBILITY,
+          isUITest: true
         },
         {
           testIdentifier: 'Test.touchFailed',
           suiteName: 'Test',
-          message: 'failed to tap button'
+          message: 'failed to tap button',
+          severity: TestFailureSeverity.MEDIUM,
+          category: TestFailureCategory.UI_INTERACTION,
+          isUITest: true
         },
         {
           testIdentifier: 'Test.animationTiming',
           suiteName: 'Test',
-          message: 'element did not appear after animation'
+          message: 'element did not appear after animation',
+          severity: TestFailureSeverity.LOW,
+          category: TestFailureCategory.UI_TIMING,
+          isUITest: true
         }
       ];
 
@@ -171,7 +189,10 @@ describe('UI Test Auto-Detection Logic', () => {
         stack: 'XCUIApplication.launch() -> XCUIElement.waitForExistence(timeout:)',
         attachments: ['login_failure_1.png', 'login_failure_2.png'],
         duration: 30.5,
-        platform: 'iOS 17.0 Simulator'
+        platform: 'iOS 17.0 Simulator',
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ELEMENT_NOT_FOUND,
+        isUITest: true
       };
 
       // This should be detected as UI test due to:
@@ -194,14 +215,20 @@ describe('UI Test Auto-Detection Logic', () => {
         testIdentifier: 'UserManagerTests.testUserValidation',
         suiteName: 'UserManagerTests', 
         message: 'XCTAssertEqual failed: expected "valid" but got "invalid"',
-        stack: 'UserManager.validateUser() -> XCTAssert'
+        stack: 'UserManager.validateUser() -> XCTAssert',
+        severity: TestFailureSeverity.MEDIUM,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false
       };
 
       const uiTestFailure: TestFailure = {
         testIdentifier: 'UserUITests.testUserProfileDisplay',
         suiteName: 'UserUITests',
         message: 'Profile view did not load within timeout',
-        attachments: ['profile_timeout.png']
+        attachments: ['profile_timeout.png'],
+        severity: TestFailureSeverity.LOW,
+        category: TestFailureCategory.UI_TIMING,
+        isUITest: true
       };
 
       // Unit test indicators: no UI in suite name, standard assertion failure, no screenshots
