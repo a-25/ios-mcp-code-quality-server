@@ -5,6 +5,7 @@ import { formatTestResultResponse } from '../core/formatTestResultResponse.js';
 import type { TestFixOptions } from '../core/taskOptions.js';
 import type { TaskResult } from '../core/taskOrchestrator.js';
 import { TaskErrorType } from '../core/taskOrchestrator.js';
+import { TestFailureCategory, TestFailureSeverity } from '../core/testRunner.js';
 
 describe('End-to-End AI Enhancement Integration', () => {
   const testDir = '/tmp/e2e-ai-test';
@@ -83,8 +84,9 @@ class UserAuthenticationTests: XCTestCase {
         message: 'XCTAssertTrue failed: Invalid user should not be able to log in',
         stack: 'Test failed at line 25 in testInvalidUserLogin()',
         attachments: ['login_failure_screenshot.png'],
-        severity: 'high' as const,
-        category: 'assertion' as const,
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
         duration: 2.5,
         platform: 'iOS 17.0 Simulator',
         sourceContext: {
@@ -227,8 +229,9 @@ class UserAuthenticationTests: XCTestCase {
         file: '/project/NetworkTests.swift',
         line: 45,
         message: 'XCTAssertEqual failed: ("404") is not equal to ("200")',
-        severity: 'high' as const,
-        category: 'assertion' as const,
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
         suggestions: [
           'Check API endpoint URL for correctness',
           'Verify network connectivity in tests',

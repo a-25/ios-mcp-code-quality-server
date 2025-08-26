@@ -3,6 +3,7 @@ import { formatTestResultResponse, type AIFriendlyTestResponse } from '../core/f
 import type { TestFixOptions } from '../core/taskOptions.js';
 import type { TaskResult } from '../core/taskOrchestrator.js';
 import { TaskErrorType } from '../core/taskOrchestrator.js';
+import { TestFailureCategory, TestFailureSeverity } from '../core/testRunner.js';
 
 describe('AI Enhancement Features', () => {
   const baseInput: TestFixOptions = {
@@ -27,8 +28,9 @@ describe('AI Enhancement Features', () => {
         message: 'XCTAssertEqual failed: expected "success" but got "failure"',
         stack: 'stack trace here',
         attachments: [],
-        severity: 'critical' as const,
-        category: 'assertion' as const,
+        severity: TestFailureSeverity.CRITICAL,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
         suggestions: ['Check the implementation logic', 'Verify test data setup']
       };
 
@@ -115,8 +117,9 @@ describe('AI Enhancement Features', () => {
         testIdentifier: 'TestCase.testAssertion',
         suiteName: 'TestCase',
         message: 'XCTAssertEqual failed',
-        severity: 'medium' as const,
-        category: 'assertion' as const,
+        severity: TestFailureSeverity.MEDIUM,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
         suggestions: ['Review assertion logic']
       };
 
@@ -142,8 +145,9 @@ describe('AI Enhancement Features', () => {
         testIdentifier: 'TestCase.testCrash',
         suiteName: 'TestCase',
         message: 'Test crashed with SIGABRT',
-        severity: 'critical' as const,
-        category: 'crash' as const,
+        severity: TestFailureSeverity.CRITICAL,
+        category: TestFailureCategory.CRASH,
+        isUITest: false,
         suggestions: ['Check for nil pointer dereferences', 'Add defensive programming']
       };
 
@@ -173,8 +177,9 @@ describe('AI Enhancement Features', () => {
         file: '/path/to/test.swift',
         line: 123,
         message: 'Test failed unexpectedly',
-        severity: 'high' as const,
-        category: 'assertion' as const,
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
         suggestions: ['Check implementation', 'Verify test data']
       };
 
@@ -213,6 +218,9 @@ describe('AI Enhancement Features', () => {
           testIdentifier: 'Test.failing',
           suiteName: 'Test',
           message: 'Assertion failed',
+          severity: TestFailureSeverity.MEDIUM,
+          category: TestFailureCategory.ASSERTION,
+          isUITest: false,
           suggestions: ['Fix the logic']
         }],
         buildErrors: []
@@ -272,13 +280,14 @@ describe('AI Enhancement Features', () => {
         success: false,
         error: TaskErrorType.TEST_FAILURES,
         testFailures: [{
-          testIdentifier: 'Test.withScreenshot',
-          suiteName: 'Test',
-          message: 'UI test failed',
+          testIdentifier: 'MyAppUITests.testLoginButton',
+          suiteName: 'MyAppUITests',
+          message: 'Button with identifier "loginButton" was not found',
           attachments: ['screenshot1.png', 'screenshot2.png'],
-          severity: 'medium' as const,
-          category: 'assertion' as const,
-          suggestions: ['Check UI element visibility']
+          severity: TestFailureSeverity.HIGH,
+          category: TestFailureCategory.ELEMENT_NOT_FOUND,
+          isUITest: true,
+          suggestions: ['Check UI element visibility', 'Verify accessibility identifier is correct']
         }],
         buildErrors: [],
         aiSuggestions: ['Update test selectors', 'Add wait conditions'],
@@ -295,13 +304,56 @@ describe('AI Enhancement Features', () => {
       expect(res._meta?.structured?.summary?.totalFailures).toBe(1);
       expect(res._meta?.structured?.failures).toHaveLength(1);
       const failure = res._meta?.structured?.failures?.[0];
-      expect(failure?.test).toBe('Test.withScreenshot');
-      expect(failure?.severity).toBe('medium');
-      expect(failure?.category).toBe('assertion');
+      expect(failure?.test).toBe('MyAppUITests.testLoginButton');
+      expect(failure?.severity).toBe('high');
+      expect(failure?.category).toBe('element_not_found');
       expect(failure?.suggestions).toContain('Check UI element visibility');
       
       // Check AI suggestions from TaskResult
       expect(res._meta?.structured?.actionable?.suggestions).toEqual(['Update test selectors', 'Add wait conditions']);
+    });
+
+    it('should auto-detect UI tests and categorize appropriately', () => {
+      // Simulate what would happen after testRunner processes a UI test failure
+      const uiTestResult: TaskResult<string> = {
+        success: false,
+        error: TaskErrorType.TEST_FAILURES,
+        testFailures: [{
+          testIdentifier: 'LoginUITests.testButtonTap',
+          suiteName: 'LoginUITests',
+          message: 'Element not found: Could not locate button with identifier "submit"',
+          attachments: ['failure_screenshot.png'],
+          // Pre-categorized as would happen in testRunner processing
+          isUITest: true,
+          category: TestFailureCategory.ELEMENT_NOT_FOUND,
+          severity: TestFailureSeverity.HIGH,
+          suggestions: [
+            'Verify the element exists in the current view hierarchy',
+            'Check if the element accessibility identifier is correct'
+          ]
+        }],
+        buildErrors: [],
+        message: 'UI test failure with auto-detection'
+      };
+
+      const res: AIFriendlyTestResponse = formatTestResultResponse(
+        baseInput,
+        getValidation(baseInput),
+        uiTestResult
+      );
+
+      // Verify UI test was properly categorized and formatted
+      const failure = res._meta?.structured?.failures?.[0];
+      expect(failure?.category).toBe('element_not_found');
+      expect(failure?.severity).toBe('high');
+      
+      // Should have UI-specific suggestions
+      expect(failure?.suggestions).toContain('Verify the element exists in the current view hierarchy');
+      expect(failure?.suggestions).toContain('Check if the element accessibility identifier is correct');
+      
+      // Should show screenshots in formatted output
+      expect(res.content[0].text).toContain('📸 Screenshots:');
+      expect(res.content[0].text).toContain('failure_screenshot.png');
     });
   });
 });
