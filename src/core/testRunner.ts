@@ -5,6 +5,202 @@ import fs from "fs-extra";
 import { spawnAndCollectOutput, SpawnOutputResult } from "../utils/spawnAndCollectOutput.js";
 import { enhanceTestFailuresWithSourceContext, extractProjectRoot } from "./sourceCodeContext.js";
 
+// UI Test Detection Patterns - extracted to avoid recreating on each call
+const UI_TEST_INDICATORS = [
+  'ui',
+  'xcui', 
+  'xcuielement',
+  'xcuiapplication',
+  'xcuielementquery',
+  'xctestexpectation',
+  'xctnspredicateexpectation',
+  'xcuielementtypebutton',
+  'xcuielementtypetextfield',
+  'xcuielementtypenav',
+  'element not found',
+  'element does not exist',
+  'no matches found for',
+  'failed to find element',
+  'unable to find element',
+  'no element matching',
+  'element query failed',
+  'does not exist in the current page',
+  'waitforexistence timeout',
+  'element not accessible',
+  'element is not hittable',
+  'element is not enabled',
+  'accessibility identifier',
+  'accessibility label',
+  'voiceover element',
+  'accessibility traits',
+  'unable to find accessible element',
+  'tap failed',
+  'touch failed',
+  'swipe failed',
+  'unable to tap',
+  'unable to touch',
+  'gesture failed',
+  'interaction failed',
+  'could not perform action',
+  'animation not completed',
+  'transition timeout',
+  'app not responding',
+  'ui not updated',
+  'view not visible',
+  'element not stable',
+  'view not found',
+  'button not found',
+  'text field not found',
+  'label not found',
+  'image not found',
+  'cell not found',
+  'table not found',
+  'navigation bar',
+  'tab bar',
+  'alert not found',
+  'touch',
+  'tap',
+  'swipe',
+  'scroll',
+  'keyboard',
+  'animation'
+] as const;
+
+// UI Test Categorization Patterns - extracted to avoid recreating on each call
+// UI Test Categorization Patterns - extracted to avoid recreating on each call
+const ELEMENT_NOT_FOUND_PATTERNS = [
+  'element not found',
+  'element does not exist', 
+  'view not found',
+  'button not found',
+  'text field not found',
+  'label not found',
+  'image not found',
+  'cell not found',
+  'table not found',
+  'navigation bar not found',
+  'tab bar not found',
+  'alert not found',
+  'picker not found',
+  'slider not found',
+  'switch not found',
+  'segmented control not found',
+  'toolbar not found',
+  'no matches found for',
+  'failed to find element',
+  'unable to find element',
+  'no element matching',
+  'element query failed',
+  'does not exist in the current page',
+  'waitforexistence timeout',
+  'element not accessible',
+  'no accessible element found',
+  'element matching predicate not found'
+] as const;
+
+const ACCESSIBILITY_PATTERNS = [
+  'accessibility',
+  'accessible',
+  'accessibility identifier',
+  'accessibility label',
+  'accessibility value',
+  'accessibility hint',
+  'accessibility traits',
+  'accessibility element',
+  'voiceover',
+  'voiceover element',
+  'screen reader',
+  'assistive technology',
+  'unable to find accessible element',
+  'element not accessible',
+  'no accessible element found',
+  'accessibility activation point',
+  'accessibility frame',
+  'accessibility path',
+  'dynamic type',
+  'reduce motion',
+  'high contrast'
+] as const;
+
+const UI_INTERACTION_PATTERNS = [
+  'touch',
+  'tap',
+  'swipe',
+  'scroll',
+  'keyboard',
+  'interaction',
+  'gesture',
+  'tap failed',
+  'touch failed',
+  'swipe failed',
+  'scroll failed',
+  'unable to tap',
+  'unable to touch',
+  'unable to scroll',
+  'element is not hittable',
+  'element is not enabled',
+  'element is not visible',
+  'element is obstructed',
+  'gesture failed',
+  'interaction failed',
+  'could not perform action',
+  'action unsuccessful',
+  'coordinate is not hittable',
+  'coordinate out of bounds',
+  'pinch failed',
+  'rotate failed',
+  'drag failed',
+  'long press failed',
+  'force touch failed',
+  '3d touch failed',
+  'press and hold failed',
+  'double tap failed',
+  'type text failed',
+  'clear text failed',
+  'select text failed'
+] as const;
+
+const UI_TIMING_PATTERNS = [
+  'animation',
+  'wait',
+  'appear',
+  'disappear',
+  'visible',
+  'hittable',
+  'enabled',
+  'animation not completed',
+  'transition timeout',
+  'app not responding',
+  'ui not updated',
+  'view not visible',
+  'element not stable',
+  'element not ready',
+  'timeout waiting for',
+  'timed out waiting',
+  'waitforexistence timeout',
+  'waitforexistence failed',
+  'expectation timeout',
+  'expectation failed',
+  'async operation timeout',
+  'network request timeout',
+  'loading timeout',
+  'spinner timeout',
+  'activity indicator timeout',
+  'slow response',
+  'delayed response',
+  'element state change timeout',
+  'property change timeout',
+  'value change timeout'
+] as const;
+
+// Standard Test Failure Patterns - extracted to avoid recreating on each call
+const ASSERTION_PATTERNS = ['assertion', 'expect', 'assert'] as const;
+const CRASH_PATTERNS = ['crash', 'sigabrt', 'signal'] as const;
+const TIMEOUT_PATTERNS = ['timeout', 'timed out'] as const;
+const BUILD_PATTERNS = ['build', 'compile'] as const;
+const SETUP_PATTERNS = ['setup', 'before'] as const;
+const TEARDOWN_PATTERNS = ['teardown', 'after'] as const;
+
 export enum TestFailureSeverity {
   CRITICAL = 'critical',
   HIGH = 'high', 
@@ -51,61 +247,8 @@ function detectUITest(failure: TestFailure): boolean {
   const stack = (failure.stack || '').toLowerCase();
   const combined = `${suiteName} ${testIdentifier} ${message} ${stack}`;
   
-  // Check for UI test indicators
-  const uiTestIndicators = [
-    'ui',
-    'xcui', 
-    'xctunableapplication',
-    'xcuielement',
-    'xcuiapplication',
-    'xcuielementquery',
-    'xctestexpectation',
-    'xctnspredicateexpectation',
-    'element not found',
-    'element does not exist',
-    'no matches found for',
-    'failed to find element',
-    'unable to find element',
-    'no element matching',
-    'element query failed',
-    'does not exist in the current page',
-    'waitforexistence timeout',
-    'element not accessible',
-    'accessibility identifier',
-    'accessibility label',
-    'voiceover element',
-    'accessibility traits',
-    'unable to find accessible element',
-    'tap failed',
-    'touch failed',
-    'swipe failed',
-    'unable to tap',
-    'unable to touch',
-    'element is not hittable',
-    'element is not enabled',
-    'gesture failed',
-    'interaction failed',
-    'could not perform action',
-    'animation not completed',
-    'transition timeout',
-    'app not responding',
-    'ui not updated',
-    'view not visible',
-    'element not stable',
-    'view not found',
-    'button not found',
-    'text field not found',
-    'navigation bar',
-    'alert not found',
-    'touch',
-    'tap',
-    'swipe',
-    'scroll',
-    'keyboard',
-    'animation'
-  ];
-  
-  return uiTestIndicators.some(indicator => combined.includes(indicator.toLowerCase()));
+  // Check for UI test indicators using pre-defined constant array
+  return UI_TEST_INDICATORS.some(indicator => combined.includes(indicator));
 }
 
 // Helper function to categorize test failures
@@ -122,100 +265,30 @@ function categorizeFailure(failure: TestFailure): { category: TestFailureCategor
   
   // UI Test specific categorization
   if (isUITest) {
-    const elementNotFoundPatterns = [
-      'element not found',
-      'element does not exist', 
-      'view not found',
-      'button not found',
-      'text field not found',
-      'navigation bar',
-      'alert not found',
-      'no matches found for',
-      'failed to find element',
-      'unable to find element',
-      'no element matching',
-      'element query failed',
-      'does not exist in the current page',
-      'waitforexistence timeout',
-      'element not accessible'
-    ];
-    
-    const accessibilityPatterns = [
-      'accessibility',
-      'accessible',
-      'accessibility identifier',
-      'accessibility label',
-      'voiceover element',
-      'accessibility traits',
-      'unable to find accessible element'
-    ];
-    
-    const uiInteractionPatterns = [
-      'touch',
-      'tap',
-      'swipe',
-      'scroll',
-      'keyboard',
-      'interaction',
-      'gesture',
-      'tap failed',
-      'touch failed',
-      'swipe failed',
-      'unable to tap',
-      'unable to touch',
-      'element is not hittable',
-      'element is not enabled',
-      'gesture failed',
-      'interaction failed',
-      'could not perform action'
-    ];
-    
-    const uiTimingPatterns = [
-      'animation',
-      'wait',
-      'appear',
-      'disappear',
-      'visible',
-      'hittable',
-      'animation not completed',
-      'transition timeout',
-      'app not responding',
-      'ui not updated',
-      'view not visible',
-      'element not stable'
-    ];
-    
-    if (elementNotFoundPatterns.some(pattern => combined.includes(pattern))) {
+    if (ELEMENT_NOT_FOUND_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.ELEMENT_NOT_FOUND;
-    } else if (accessibilityPatterns.some(pattern => combined.includes(pattern))) {
+    } else if (ACCESSIBILITY_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.ACCESSIBILITY;
-    } else if (uiInteractionPatterns.some(pattern => combined.includes(pattern))) {
+    } else if (UI_INTERACTION_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.UI_INTERACTION;
-    } else if (uiTimingPatterns.some(pattern => combined.includes(pattern))) {
+    } else if (UI_TIMING_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.UI_TIMING;
     }
   }
   
   // Standard categorization (applies to both UI and unit tests)
   if (category === TestFailureCategory.OTHER) {
-    const assertionPatterns = ['assertion', 'expect', 'assert'];
-    const crashPatterns = ['crash', 'sigabrt', 'signal'];
-    const timeoutPatterns = ['timeout', 'timed out'];
-    const buildPatterns = ['build', 'compile'];
-    const setupPatterns = ['setup', 'before'];
-    const teardownPatterns = ['teardown', 'after'];
-    
-    if (assertionPatterns.some(pattern => combined.includes(pattern))) {
+    if (ASSERTION_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.ASSERTION;
-    } else if (crashPatterns.some(pattern => combined.includes(pattern))) {
+    } else if (CRASH_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.CRASH;
-    } else if (timeoutPatterns.some(pattern => combined.includes(pattern))) {
+    } else if (TIMEOUT_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.TIMEOUT;
-    } else if (buildPatterns.some(pattern => combined.includes(pattern))) {
+    } else if (BUILD_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.BUILD;
-    } else if (setupPatterns.some(pattern => combined.includes(pattern))) {
+    } else if (SETUP_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.SETUP;
-    } else if (teardownPatterns.some(pattern => combined.includes(pattern))) {
+    } else if (TEARDOWN_PATTERNS.some(pattern => combined.includes(pattern))) {
       category = TestFailureCategory.TEARDOWN;
     }
   }
