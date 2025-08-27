@@ -708,13 +708,31 @@ export async function runTestsAndParseFailures(
   const errFile = `${runDir}/xcodebuild.stderr.log`;
   // Clean previous artifacts in this folder (should be empty, but for safety)
   await fs.emptyDir(runDir);
-  // Build xcodebuild command
-  const workspaceArg = options.xcworkspace ? `-workspace \"${options.xcworkspace}\"` : "";
-  const projectArg = options.xcodeproj ? `-project \"${options.xcodeproj}\"` : "";
+  // Build xcodebuild command - ensure workspace and project are mutually exclusive
+  let projectSourceArg = "";
+  if (options.xcworkspace) {
+    projectSourceArg = `-workspace \"${options.xcworkspace}\"`;
+  } else if (options.xcodeproj) {
+    projectSourceArg = `-project \"${options.xcodeproj}\"`;
+  }
   const schemeArg = options.scheme ? `-scheme \"${options.scheme}\"` : "";
   const destinationArg = `-destination \"${options.destination || "generic/platform=iOS Simulator"}\"`;
   const resultBundleArg = `-resultBundlePath ${xcresultPath}`;
-  const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} ${resultBundleArg}`.replace(/\s+/g, " ").trim();
+  // Add test filtering if specific tests are requested
+  let testFilterArgs = "";
+  if (options.tests && options.tests.length > 0) {
+    // For xcodebuild, we can use -only-testing to run specific tests
+    // Format: TestTarget[/TestClass[/TestMethod]] - validated in taskOptions
+    testFilterArgs = options.tests.map(test => `-only-testing:"${test.trim()}"`).join(" ");
+    console.log(`[MCP] Filtering tests: ${options.tests.join(", ")}`);
+  }
+  
+  // Log target parameter if provided (for debugging/logging purposes)
+  if (options.target) {
+    console.log(`[MCP] Running tests with target context: ${options.target}`);
+  }
+  
+  const cmd = `xcodebuild test ${projectSourceArg} ${schemeArg} ${destinationArg} ${testFilterArgs} ${resultBundleArg}`.replace(/\s+/g, " ").trim();
 
   console.log(`[MCP] Running tests with: ${cmd}`);
 

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { orchestrateTask, TaskType } from "./core/taskOrchestrator.js";
 import { formatTestResultResponse } from "./core/formatTestResultResponse.js";
 import { validateTestFixOptions, validateLintFixOptions, validateLintOptions, TestFixOptions, LintFixOptions, LintOptions } from "./core/taskOptions.js";
+import { discoverAvailableTests, validateTestNames, formatTestList } from "./core/testDiscovery.js";
 import type { TaskResult } from "./core/taskOrchestrator.js";
 import { env } from "./config/environment.js";
 import { logger } from "./utils/logger.js";
@@ -79,18 +80,54 @@ app.post("/", async (req, res) => {
         "test",
         {
           title: "Run iOS tests",
-          description: "Run iOS tests and report failures with comprehensive error handling",
+          description: "Run iOS tests and report failures with comprehensive error handling. Supports running specific tests and optional target parameter.",
           inputSchema: {
             xcodeproj: z.string().optional(),
             xcworkspace: z.string().optional(),
             scheme: z.string().optional(),
-            destination: z.string().optional()
+            destination: z.string().optional(),
+            tests: z.array(z.string()).optional().describe("Optional array of specific test names to run (e.g., ['MyTestClass/testMethod', 'AnotherTest'])"),
+            target: z.string().optional().describe("Optional target parameter for test execution context")
           }
         },
         async (input) => {
           return handleAsyncError(async () => {
             const options = input as TestFixOptions;
             const validation = validateTestFixOptions(options);
+
+            // If validation fails, return early
+            if (!validation.valid) {
+              throw new McpError(
+                McpErrorCode.VALIDATION_ERROR,
+                validation.error || "Validation failed",
+                { options }
+              );
+            }
+
+            // Validate test names if provided
+            if (options.tests && options.tests.length > 0) {
+              console.log(`[MCP] Validating ${options.tests.length} test names...`);
+              const testValidation = await validateTestNames(options.tests, options);
+              
+              if (testValidation.invalid.length > 0) {
+                let errorMessage = `Invalid test names: ${testValidation.invalid.join(", ")}`;
+                
+                // Add suggestions if available
+                for (const [invalidTest, suggestions] of Object.entries(testValidation.suggestions)) {
+                  if (suggestions.length > 0) {
+                    errorMessage += `\n\nDid you mean one of these for '${invalidTest}'?\n${suggestions.join("\n")}`;
+                  }
+                }
+                
+                throw new McpError(
+                  McpErrorCode.VALIDATION_ERROR,
+                  errorMessage,
+                  { invalidTests: testValidation.invalid, suggestions: testValidation.suggestions }
+                );
+              }
+              
+              console.log(`[MCP] Validated ${testValidation.valid.length} test names successfully`);
+            }
 
             logger.taskStart("test", options);
             const startTime = Date.now();
@@ -140,6 +177,60 @@ app.post("/", async (req, res) => {
 
             return { content: [{ type: "text", text: JSON.stringify(result) }] };
           }, "Lint execution failed");
+        }
+      );
+
+      // Register MCP list-tests tool for test discovery
+      server.registerTool(
+        "list-tests",
+        {
+          title: "List available iOS tests",
+          description: "Discover and list all available tests in the iOS project",
+          inputSchema: {
+            xcodeproj: z.string().optional(),
+            xcworkspace: z.string().optional(), 
+            scheme: z.string().optional(),
+            destination: z.string().optional()
+          }
+        },
+        async (input) => {
+          return handleAsyncError(async () => {
+            const options = input as TestFixOptions;
+            
+            // Basic validation - need either xcodeproj or xcworkspace
+            if (!options.xcodeproj && !options.xcworkspace) {
+              throw new McpError(
+                McpErrorCode.VALIDATION_ERROR,
+                "Either xcodeproj or xcworkspace must be provided",
+                { options }
+              );
+            }
+            
+            logger.taskStart("list-tests", options);
+            const startTime = Date.now();
+            
+            const discoveryResult = await discoverAvailableTests(options);
+            
+            const duration = Date.now() - startTime;
+            logger.taskComplete("list-tests", discoveryResult.success, duration);
+            
+            if (!discoveryResult.success) {
+              throw new McpError(
+                McpErrorCode.INTERNAL_ERROR,
+                `Test discovery failed: ${discoveryResult.error}`,
+                { error: discoveryResult.error }
+              );
+            }
+            
+            const formattedList = formatTestList(discoveryResult.tests);
+            
+            return {
+              content: [{
+                type: "text",
+                text: formattedList
+              }]
+            };
+          }, "Test discovery failed");
         }
       );
 

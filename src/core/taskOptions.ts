@@ -7,6 +7,8 @@ export interface TestFixOptions {
   xcworkspace?: string;
   scheme: string;
   destination?: string;
+  tests?: string[];  // Optional list of specific tests to run
+  target?: string;   // Optional target parameter
 }
 
 export interface LintFixOptions {
@@ -29,12 +31,49 @@ export interface LintOptions {
 }
 
 export function validateTestFixOptions(options: Partial<TestFixOptions>): ValidationResult {
+  // Check basic project/workspace requirements
   if (!options.xcodeproj && !options.xcworkspace) {
     return { valid: false, error: "Either xcodeproj or xcworkspace must be provided" };
   }
+  
+  // CRITICAL: Cannot use both project and workspace (xcodebuild specification)
+  if (options.xcodeproj && options.xcworkspace) {
+    return { valid: false, error: "Cannot specify both xcodeproj and xcworkspace - they are mutually exclusive" };
+  }
+  
+  // Workspace MUST have scheme (xcodebuild specification requirement)
+  if (options.xcworkspace && !options.scheme) {
+    return { valid: false, error: "Scheme is required when using xcworkspace" };
+  }
+  
+  // For test action, scheme is generally required even for projects
   if (!options.scheme) {
     return { valid: false, error: "Scheme must be provided for test-fix" };
   }
+  
+  // Validate tests array if provided
+  if (options.tests !== undefined) {
+    if (!Array.isArray(options.tests)) {
+      return { valid: false, error: "tests must be an array of test names" };
+    }
+    for (const test of options.tests) {
+      if (typeof test !== 'string' || test.trim().length === 0) {
+        return { valid: false, error: "Each test name must be a non-empty string" };
+      }
+      
+      // Validate test identifier format: TestTarget[/TestClass[/TestMethod]]
+      const testIdPattern = /^[A-Za-z_][A-Za-z0-9_]*(?:\/[A-Za-z_][A-Za-z0-9_]*(?:\/[A-Za-z_][A-Za-z0-9_]*)?)?$/;
+      if (!testIdPattern.test(test.trim())) {
+        return { valid: false, error: `Invalid test identifier format: "${test}". Expected format: TestTarget[/TestClass[/TestMethod]]` };
+      }
+    }
+  }
+  
+  // Validate target if provided
+  if (options.target !== undefined && typeof options.target !== 'string') {
+    return { valid: false, error: "target must be a string" };
+  }
+  
   return { valid: true };
 }
 
