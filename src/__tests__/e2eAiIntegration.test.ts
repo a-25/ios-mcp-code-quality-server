@@ -293,4 +293,52 @@ class UserAuthenticationTests: XCTestCase {
       expect(response.content[0].text).toContain('("404") is not equal to ("200")');
     });
   });
+
+  describe('Enhanced Test Tool Integration', () => {
+    it('should integrate with formatTestResultResponse for enhanced test failures', () => {
+      // Test that enhanced test failure data integrates properly with response formatting
+      const enhancedFailure = {
+        testIdentifier: 'MyAppTests/LoginTests/testSpecificLoginCase',
+        suiteName: 'LoginTests',
+        file: '/project/LoginTests.swift',
+        line: 42,
+        message: 'Specific test case failed with assertion error',
+        severity: TestFailureSeverity.HIGH,
+        category: TestFailureCategory.ASSERTION,
+        isUITest: false,
+        suggestions: [
+          'Verify login credentials for specific test case',
+          'Check authentication flow for edge cases'
+        ]
+      };
+
+      const result: TaskResult<string> = {
+        success: false,
+        error: TaskErrorType.TEST_FAILURES,
+        testFailures: [enhancedFailure],
+        buildErrors: [],
+        aiSuggestions: [
+          'Focus on the specific failing test case',
+          'Review test data for LoginTests/testSpecificLoginCase'
+        ],
+        needsContext: false,
+        message: 'Specific test case failure detected'
+      };
+
+      const input: TestFixOptions = {
+        xcworkspace: 'MyApp.xcworkspace',
+        scheme: 'MyAppTests',
+        tests: ['MyAppTests/LoginTests/testSpecificLoginCase'],
+        target: 'regression'
+      };
+
+      const response = formatTestResultResponse(input, { valid: true }, result);
+
+      // Verify the response includes context about the specific test run
+      expect(response._meta?.structured?.status).toBe('failure');
+      expect(response._meta?.structured?.failures?.[0]?.test).toBe('MyAppTests/LoginTests/testSpecificLoginCase');
+      expect(response.content[0].text).toContain('testSpecificLoginCase');
+      expect(response.content[0].text).toContain('Specific test case failed');
+    });
+  });
 });

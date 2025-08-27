@@ -121,7 +121,7 @@ MAX_CONCURRENT_TASKS=5
 ## Tools & Capabilities
 
 ### Test Tool
-Executes iOS tests and provides detailed failure analysis.
+Executes iOS tests and provides detailed failure analysis with support for running specific tests.
 
 **Parameters:**
 - `xcodeproj` (optional): Path to Xcode project file
@@ -130,6 +130,11 @@ Executes iOS tests and provides detailed failure analysis.
 - `scheme` (required): Xcode scheme to test
 - `destination` (optional): Test destination (simulator/device)
   - Default value: `generic/platform=iOS Simulator`
+- `tests` (optional): Array of specific test names to run
+  - Format: `['MyTarget/TestClass/testMethod', 'MyTarget/TestClass']`
+  - Examples: `['MyAppTests/LoginTests/testValidLogin', 'MyAppUITests/HomeScreenTests']`
+- `target` (optional): Target parameter for test execution context
+  - Can be used to specify different test environments or configurations
 
 **Example Responses:**
 
@@ -169,6 +174,16 @@ Executes iOS tests and provides detailed failure analysis.
 }
 ```
 
+### List Tests Tool
+Discovers and lists all available tests in the iOS project.
+
+**Parameters:**
+- `xcodeproj` (optional): Path to Xcode project file
+- `xcworkspace` (optional): Path to Xcode workspace file
+- **Note**: Either `xcodeproj` or `xcworkspace` parameter is mandatory (at least one must be provided)
+- `scheme` (optional): Xcode scheme to analyze
+- `destination` (optional): Test destination (simulator/device)
+
 ### Lint Tool
 Performs lint analysis on your iOS project. Currently supported linters: [SwiftLint](https://github.com/realm/SwiftLint)
 
@@ -192,7 +207,25 @@ Main MCP endpoint for tool execution requests.
     "arguments": {
       "xcodeproj": "MyApp.xcodeproj",
       "scheme": "MyApp",
-      "destination": "platform=iOS Simulator,name=iPhone 15"
+      "destination": "platform=iOS Simulator,name=iPhone 15",
+      "tests": ["MyAppTests/LoginTests/testValidLogin"],
+      "target": "unit"
+    }
+  }
+}
+```
+
+**List Tests Example:**
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "list-tests",
+    "arguments": {
+      "xcworkspace": "MyApp.xcworkspace",
+      "scheme": "MyApp"
     }
   }
 }
@@ -207,11 +240,20 @@ Main MCP endpoint for tool execution requests.
 "Can you run the tests for the LoginFeature scheme and tell me what failed?"
 ```
 
-The AI assistant will use the test tool to:
-1. Execute tests for the specified scheme
-2. Parse build and test results
-3. Provide a structured summary of failures
-4. Highlight specific files and line numbers that need attention
+```
+"Run only the LoginTests for the MyApp scheme"
+```
+
+```
+"List all available tests in my project and then run the failing ones"
+```
+
+The AI assistant will use the enhanced test tools to:
+1. Discover available tests using the list-tests tool
+2. Execute specific tests or all tests for the specified scheme
+3. Validate test names and provide suggestions for typos
+4. Parse build and test results with detailed failure analysis
+5. Provide structured summaries of failures with file locations and line numbers
 
 ### Code Quality Analysis
 
