@@ -36,11 +36,6 @@ export function validateTestFixOptions(options: Partial<TestFixOptions>): Valida
     return { valid: false, error: "Either xcodeproj or xcworkspace must be provided" };
   }
   
-  // CRITICAL: Cannot use both project and workspace (xcodebuild specification)
-  if (options.xcodeproj && options.xcworkspace) {
-    return { valid: false, error: "Cannot specify both xcodeproj and xcworkspace - they are mutually exclusive" };
-  }
-  
   // Workspace MUST have scheme (xcodebuild specification requirement)
   if (options.xcworkspace && !options.scheme) {
     return { valid: false, error: "Scheme is required when using xcworkspace" };

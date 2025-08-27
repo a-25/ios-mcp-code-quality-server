@@ -708,10 +708,14 @@ export async function runTestsAndParseFailures(
   const errFile = `${runDir}/xcodebuild.stderr.log`;
   // Clean previous artifacts in this folder (should be empty, but for safety)
   await fs.emptyDir(runDir);
-  // Build xcodebuild command - ensure workspace and project are mutually exclusive
+  // Build xcodebuild command - xcworkspace takes precedence over xcodeproj
   let projectSourceArg = "";
   if (options.xcworkspace) {
     projectSourceArg = `-workspace \"${options.xcworkspace}\"`;
+    // Log when xcodeproj is ignored in favor of xcworkspace
+    if (options.xcodeproj) {
+      console.log(`[MCP] Note: xcodeproj parameter ignored in favor of xcworkspace`);
+    }
   } else if (options.xcodeproj) {
     projectSourceArg = `-project \"${options.xcodeproj}\"`;
   }

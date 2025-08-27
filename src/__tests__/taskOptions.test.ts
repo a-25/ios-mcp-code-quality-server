@@ -139,7 +139,7 @@ describe('validateTestFixOptions', () => {
       expect(result.error).toBe('Either xcodeproj or xcworkspace must be provided');
     });
 
-    it('should be invalid when both xcodeproj and xcworkspace are provided', () => {
+    it('should be valid when both xcodeproj and xcworkspace are provided (xcworkspace takes precedence)', () => {
       const options: TestFixOptions = {
         xcodeproj: 'MyApp.xcodeproj',
         xcworkspace: 'MyApp.xcworkspace',
@@ -148,8 +148,8 @@ describe('validateTestFixOptions', () => {
 
       const result = validateTestFixOptions(options);
 
-      expect(result.valid).toBe(false);
-      expect(result.error).toBe('Cannot specify both xcodeproj and xcworkspace - they are mutually exclusive');
+      expect(result.valid).toBe(true);
+      expect(result.error).toBeUndefined();
     });
 
     it('should be invalid when xcworkspace is provided without scheme', () => {

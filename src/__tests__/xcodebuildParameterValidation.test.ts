@@ -5,18 +5,18 @@ import type { SpawnOutputResult } from '../utils/spawnAndCollectOutput.js';
 
 describe('xcodebuild Parameter Validation', () => {
   describe('Critical xcodebuild specification compliance', () => {
-    describe('Project vs Workspace mutual exclusion', () => {
-      it('should reject when both xcodeproj and xcworkspace are provided', () => {
-        const options: Partial<TestFixOptions> = {
+    describe('Project vs Workspace precedence', () => {
+      it('should accept both xcodeproj and xcworkspace with xcworkspace taking precedence', () => {
+        const options: TestFixOptions = {
           xcodeproj: 'MyApp.xcodeproj',
-          xcworkspace: 'MyApp.xcworkspace', // CONFLICT: Cannot use both
+          xcworkspace: 'MyApp.xcworkspace', // xcworkspace takes precedence
           scheme: 'MyApp'
         };
 
         const result = validateTestFixOptions(options);
 
-        expect(result.valid).toBe(false);
-        expect(result.error).toBe('Cannot specify both xcodeproj and xcworkspace - they are mutually exclusive');
+        expect(result.valid).toBe(true);
+        expect(result.error).toBeUndefined();
       });
 
       it('should accept xcworkspace with scheme (valid workspace build)', () => {
@@ -159,6 +159,34 @@ describe('xcodebuild Parameter Validation', () => {
       const calledCommand = capturedCommand.mock.calls[0][0];
       expect(calledCommand).toContain('-workspace "MyApp.xcworkspace"');
       expect(calledCommand).not.toContain('-project');
+    });
+
+    it('should use xcworkspace when both xcworkspace and xcodeproj are provided', async () => {
+      const capturedCommand = vi.fn();
+      const consoleSpy = vi.spyOn(console, 'log');
+      const mockSpawnAndCollectOutput = async (cmd: string): Promise<SpawnOutputResult> => {
+        capturedCommand(cmd);
+        return { stdout: 'Test passed', stderr: '' };
+      };
+
+      const options: TestFixOptions = {
+        xcworkspace: 'MyApp.xcworkspace',
+        xcodeproj: 'MyApp.xcodeproj', // This should be ignored
+        scheme: 'MyAppTests'
+      };
+
+      await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
+
+      const calledCommand = capturedCommand.mock.calls[0][0];
+      
+      // Should use workspace, not project
+      expect(calledCommand).toContain('-workspace "MyApp.xcworkspace"');
+      expect(calledCommand).not.toContain('-project');
+      
+      // Should log that xcodeproj was ignored
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Note: xcodeproj parameter ignored in favor of xcworkspace');
+      
+      consoleSpy.mockRestore();
     });
 
     it('should generate command with project only when no workspace provided', async () => {
@@ -381,6 +409,47 @@ describe('xcodebuild Parameter Validation', () => {
       expect(calledCommand).not.toContain('-workspace'); // Should not include workspace when project is used
       expect(calledCommand).toContain('-scheme "SimpleAppTests"');
       expect(calledCommand).toContain('-only-testing:"SimpleAppTests/BasicTests"');
+    });
+
+    it('should demonstrate xcworkspace precedence with full parameter set', async () => {
+      const capturedCommand = vi.fn();
+      const consoleSpy = vi.spyOn(console, 'log');
+      const mockSpawnAndCollectOutput = async (cmd: string): Promise<SpawnOutputResult> => {
+        capturedCommand(cmd);
+        return { stdout: 'Test passed', stderr: '' };
+      };
+
+      const options: TestFixOptions = {
+        xcworkspace: 'MyComplexApp.xcworkspace',
+        xcodeproj: 'ShouldBeIgnored.xcodeproj', // This will be ignored
+        scheme: 'MyComplexAppTests',
+        destination: 'platform=iOS Simulator,name=iPhone 15',
+        tests: ['MyAppTests/LoginTests/testValid'],
+        target: 'integration'
+      };
+
+      // Validate that this configuration is valid
+      const validation = validateTestFixOptions(options);
+      expect(validation.valid).toBe(true);
+
+      await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
+
+      const calledCommand = capturedCommand.mock.calls[0][0];
+      
+      // Should use workspace, completely ignore project
+      expect(calledCommand).toContain('-workspace "MyComplexApp.xcworkspace"');
+      expect(calledCommand).not.toContain('-project');
+      expect(calledCommand).not.toContain('ShouldBeIgnored.xcodeproj');
+      
+      // Should have logged the precedence message
+      expect(consoleSpy).toHaveBeenCalledWith('[MCP] Note: xcodeproj parameter ignored in favor of xcworkspace');
+      
+      // Should still include all other parameters
+      expect(calledCommand).toContain('-scheme "MyComplexAppTests"');
+      expect(calledCommand).toContain('-destination "platform=iOS Simulator,name=iPhone 15"');
+      expect(calledCommand).toContain('-only-testing:"MyAppTests/LoginTests/testValid"');
+      
+      consoleSpy.mockRestore();
     });
   });
 });
