@@ -22,14 +22,23 @@ export interface TestDiscoveryResult {
  */
 export async function discoverAvailableTests(options: TestFixOptions): Promise<TestDiscoveryResult> {
   try {
-    // Build xcodebuild command for test discovery
-    const workspaceArg = options.xcworkspace ? `-workspace "${options.xcworkspace}"` : "";
-    const projectArg = options.xcodeproj ? `-project "${options.xcodeproj}"` : "";
+    // Build xcodebuild command for test discovery - xcworkspace takes precedence over xcodeproj
+    let projectSourceArg = "";
+    if (options.xcworkspace) {
+      projectSourceArg = `-workspace "${options.xcworkspace}"`;
+      // Log when xcodeproj is ignored in favor of xcworkspace
+      if (options.xcodeproj) {
+        console.log(`[MCP] Note: xcodeproj parameter ignored in favor of xcworkspace`);
+      }
+    } else if (options.xcodeproj) {
+      projectSourceArg = `-project "${options.xcodeproj}"`;
+    }
+    
     const schemeArg = options.scheme ? `-scheme "${options.scheme}"` : "";
     const destinationArg = `-destination "${options.destination || "generic/platform=iOS Simulator"}"`;
     
     // Use xcodebuild with -dry-run to get test discovery without running tests
-    const cmd = `xcodebuild test ${workspaceArg} ${projectArg} ${schemeArg} ${destinationArg} -dry-run`.replace(/\s+/g, " ").trim();
+    const cmd = `xcodebuild test ${projectSourceArg} ${schemeArg} ${destinationArg} -dry-run`.replace(/\s+/g, " ").trim();
     
     console.log(`[MCP] Discovering tests with: ${cmd}`);
     
@@ -64,7 +73,7 @@ function parseTestDiscoveryOutput(output: string): TestInfo[] {
   // Look for test method patterns in the output
   // xcodebuild dry-run typically shows lines like:
   // "Test Case '-[MyAppTests.LoginTest testValidLogin]' started."
-  const testCasePattern = /Test Case '-\[([^.]+)\.([^.\s]+)\s+([^]]+)\]'/g;
+  const testCasePattern = /Test Case '-\[([^.]+)\.([^.\s]+)\s+([^\]]+)\]'/g;
   
   let match;
   while ((match = testCasePattern.exec(output)) !== null) {
