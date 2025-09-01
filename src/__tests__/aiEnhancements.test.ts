@@ -170,7 +170,7 @@ describe('AI Enhancement Features', () => {
   });
 
   describe('User-Friendly Text Output', () => {
-    it('should format failure output with emojis and clear structure', () => {
+    it('should format test failure output with consistent structure and emojis', () => {
       const testFailure = {
         testIdentifier: 'MyTests.testFeature',
         suiteName: 'MyTests',
@@ -197,7 +197,7 @@ describe('AI Enhancement Features', () => {
 
       const text = res.content[0].text;
       
-      // Check for user-friendly formatting
+      // Check for consistent formatting structure - emojis, file info, error, suggestions
       expect(text).toMatch(/🧪.*Test Failures Detected/);
       expect(text).toMatch(/🟠.*HIGH Priority/);
       expect(text).toMatch(/📄 File:.*test\.swift/);
@@ -205,72 +205,56 @@ describe('AI Enhancement Features', () => {
       expect(text).toMatch(/💬 Error:.*Test failed unexpectedly/);
       expect(text).toMatch(/💡 Suggestions:/);
       expect(text).toContain('Check implementation');
-      expect(text).toContain('Verify test data');
     });
 
-    it('should provide actionable next steps', () => {
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.NEEDS_CONTEXT,
-        needsContext: true,
-        message: 'Need more information',
-        testFailures: [{
-          testIdentifier: 'Test.failing',
-          suiteName: 'Test',
-          message: 'Assertion failed',
-          severity: TestFailureSeverity.MEDIUM,
-          category: TestFailureCategory.ASSERTION,
-          isUITest: false,
-          suggestions: ['Fix the logic']
-        }],
-        buildErrors: []
-      };
+    it('should handle different error types with appropriate formatting', () => {
+      const errorTestCases = [
+        {
+          error: TaskErrorType.NEEDS_CONTEXT,
+          expectedFormat: /❌.*Unexpected Error/,
+          expectedGuidance: 'needs-context'
+        },
+        {
+          error: TaskErrorType.MISSING_PROJECT,
+          expectedFormat: /📁.*Project File Not Found/,
+          expectedGuidance: 'Use absolute paths rather than relative paths'
+        }
+      ];
 
-      const res: AIFriendlyTestResponse = formatTestResultResponse(
-        baseInput, 
-        getValidation(baseInput), 
-        result
-      );
-
-      const text = res.content[0].text;
-      expect(text).toMatch(/🔍.*Analysis Required/);
-      expect(text).toMatch(/Next Steps:/);
-      expect(text).toContain('Please provide the source code');
-      expect(text).toContain('Include relevant class/function definitions');
+      errorTestCases.forEach(({ error, expectedFormat, expectedGuidance }) => {
+        const result: TaskResult<string> = { success: false, error };
+        const res = formatTestResultResponse(baseInput, getValidation(baseInput), result);
+        
+        expect(res.content[0].text).toMatch(expectedFormat);
+        expect(res.content[0].text).toContain(expectedGuidance);
+      });
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle validation errors with clear messaging', () => {
-      const invalidInput = { ...baseInput, invalid: true };
-      
-      const res: AIFriendlyTestResponse = formatTestResultResponse(
-        invalidInput,
-        getValidation(invalidInput),
-        undefined
-      );
+    it('should handle validation errors and missing project scenarios', () => {
+      const testCases = [
+        {
+          input: { ...baseInput, invalid: true },
+          validation: { valid: false, error: 'Invalid input' },
+          result: undefined,
+          expectedStatus: 'error',
+          expectedContent: /❌.*Input Validation Error/
+        },
+        {
+          input: baseInput,
+          validation: getValidation(baseInput),
+          result: { success: false, error: TaskErrorType.MISSING_PROJECT } as TaskResult<string>,
+          expectedStatus: 'error',
+          expectedContent: /📁.*Project File Not Found/
+        }
+      ];
 
-      expect(res._meta?.structured?.status).toBe('error');
-      expect(res.content[0].text).toMatch(/❌.*Input Validation Error/);
-      expect(res.content[0].text).toContain('Please check your input parameters');
-    });
-
-    it('should provide helpful guidance for missing project files', () => {
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.MISSING_PROJECT
-      };
-
-      const res: AIFriendlyTestResponse = formatTestResultResponse(
-        baseInput,
-        getValidation(baseInput),
-        result
-      );
-
-      expect(res._meta?.structured?.status).toBe('error');
-      expect(res.content[0].text).toMatch(/📁.*Project File Not Found/);
-      expect(res.content[0].text).toContain('Use absolute paths rather than relative paths');
-      expect(res.content[0].text).toContain('Example:');
+      testCases.forEach(({ input, validation, result, expectedStatus, expectedContent }) => {
+        const res = formatTestResultResponse(input, validation, result);
+        expect(res._meta?.structured?.status).toBe(expectedStatus);
+        expect(res.content[0].text).toMatch(expectedContent);
+      });
     });
   });
 

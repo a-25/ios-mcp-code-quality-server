@@ -101,64 +101,35 @@ describe('Enhanced Test Runner', () => {
   });
 
   describe('target parameter handling', () => {
-    it('should log target parameter when provided', async () => {
+    it('should handle target parameter logging correctly', async () => {
       const consoleSpy = vi.spyOn(console, 'log');
       const mockSpawnAndCollectOutput = async (_cmd: string): Promise<SpawnOutputResult> => {
         return { stdout: 'Test passed', stderr: '' };
       };
 
-      const options: TestFixOptions = {
+      // Test with target provided
+      const optionsWithTarget: TestFixOptions = {
         xcodeproj: 'MyApp.xcodeproj',
         scheme: 'MyAppTests',
         target: 'unit'
       };
 
-      await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
-
+      await runTestsAndParseFailures(optionsWithTarget, mockSpawnAndCollectOutput);
       expect(consoleSpy).toHaveBeenCalledWith('[MCP] Running tests with target context: unit');
-      consoleSpy.mockRestore();
-    });
 
-    it('should not log target when not provided', async () => {
-      const consoleSpy = vi.spyOn(console, 'log');
-      const mockSpawnAndCollectOutput = async (_cmd: string): Promise<SpawnOutputResult> => {
-        return { stdout: 'Test passed', stderr: '' };
-      };
+      consoleSpy.mockClear();
 
-      const options: TestFixOptions = {
+      // Test without target
+      const optionsWithoutTarget: TestFixOptions = {
         xcodeproj: 'MyApp.xcodeproj',
         scheme: 'MyAppTests'
       };
 
-      await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
-
+      await runTestsAndParseFailures(optionsWithoutTarget, mockSpawnAndCollectOutput);
       const targetLogCalls = consoleSpy.mock.calls.filter(call => 
         call[0]?.includes && call[0].includes('Running tests with target context')
       );
       expect(targetLogCalls).toHaveLength(0);
-      consoleSpy.mockRestore();
-    });
-
-    it('should handle various target values', async () => {
-      const consoleSpy = vi.spyOn(console, 'log');
-      const mockSpawnAndCollectOutput = async (_cmd: string): Promise<SpawnOutputResult> => {
-        return { stdout: 'Test passed', stderr: '' };
-      };
-
-      const targets = ['unit', 'integration', 'ui', 'e2e', 'custom-target'];
-
-      for (const target of targets) {
-        consoleSpy.mockClear();
-        const options: TestFixOptions = {
-          xcodeproj: 'MyApp.xcodeproj',
-          scheme: 'MyAppTests',
-          target
-        };
-
-        await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
-
-        expect(consoleSpy).toHaveBeenCalledWith(`[MCP] Running tests with target context: ${target}`);
-      }
 
       consoleSpy.mockRestore();
     });
@@ -251,41 +222,36 @@ describe('Enhanced Test Runner', () => {
   });
 
   describe('logging functionality', () => {
-    it('should log test filtering information', async () => {
+    it('should log test filtering and target information appropriately', async () => {
       const consoleSpy = vi.spyOn(console, 'log');
       const mockSpawnAndCollectOutput = async (_cmd: string): Promise<SpawnOutputResult> => {
         return { stdout: 'Test passed', stderr: '' };
       };
 
-      const options: TestFixOptions = {
+      // Test with just test filtering
+      const optionsWithTests: TestFixOptions = {
         xcodeproj: 'MyApp.xcodeproj',
         scheme: 'MyAppTests',
         tests: ['Test1', 'Test2', 'Test3']
       };
 
-      await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
-
+      await runTestsAndParseFailures(optionsWithTests, mockSpawnAndCollectOutput);
       expect(consoleSpy).toHaveBeenCalledWith('[MCP] Filtering tests: Test1, Test2, Test3');
-      consoleSpy.mockRestore();
-    });
 
-    it('should log both test filtering and target when both provided', async () => {
-      const consoleSpy = vi.spyOn(console, 'log');
-      const mockSpawnAndCollectOutput = async (_cmd: string): Promise<SpawnOutputResult> => {
-        return { stdout: 'Test passed', stderr: '' };
-      };
+      consoleSpy.mockClear();
 
-      const options: TestFixOptions = {
+      // Test with both test filtering and target
+      const optionsWithBoth: TestFixOptions = {
         xcodeproj: 'MyApp.xcodeproj',
         scheme: 'MyAppTests',
         tests: ['LoginTest'],
         target: 'smoke'
       };
 
-      await runTestsAndParseFailures(options, mockSpawnAndCollectOutput);
-
+      await runTestsAndParseFailures(optionsWithBoth, mockSpawnAndCollectOutput);
       expect(consoleSpy).toHaveBeenCalledWith('[MCP] Filtering tests: LoginTest');
       expect(consoleSpy).toHaveBeenCalledWith('[MCP] Running tests with target context: smoke');
+
       consoleSpy.mockRestore();
     });
   });

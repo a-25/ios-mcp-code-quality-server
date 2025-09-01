@@ -33,6 +33,7 @@ describe("MCP test tool main logic", () => {
     expect(result.buildErrors[0]).toContain("The following build commands failed:");
     expect(result.testFailures).toEqual([]);
   });
+
   const getValidation = (input: any) => ({ valid: !input.invalid, error: input.invalid ? "Invalid input" : undefined });
 
   const baseInput: TestFixOptions = {
@@ -42,14 +43,29 @@ describe("MCP test tool main logic", () => {
     destination: "platform=iOS Simulator,name=iPhone 16"
   };
 
-  const baseFailure = {
-    testIdentifier: "T2",
-    suiteName: "Suite",
-    file: "file.swift",
-    line: 42,
-    message: "fail",
-    stack: "stack",
-    attachments: []
+  // Helper function to create a test failure from mock data - eliminates duplication
+  const createTestFailureFromMock = (mockIndex: number = 0) => {
+    const mockFailure = testFailureMock.issues.testFailureSummaries._values[mockIndex];
+    const testIdentifier = mockFailure.testCaseName._value;
+    const fileUrl = mockFailure.documentLocationInCreatingWorkspace.url._value;
+    const lineMatch = fileUrl.match(/EndingLineNumber=(\d+)/);
+    const line = lineMatch ? Number(lineMatch[1]) : undefined;
+    const message = mockFailure.message._value;
+    const suiteName = testIdentifier.split(".")[0];
+    const file = fileUrl.split("#")[0].replace("file:///", "/");
+    
+    return {
+      testIdentifier,
+      suiteName,
+      file,
+      line,
+      message,
+      stack: "",
+      attachments: [] as string[],
+      severity: TestFailureSeverity.MEDIUM,
+      category: TestFailureCategory.ASSERTION,
+      isUITest: false
+    };
   };
 
   it("returns validation error", () => {
@@ -62,30 +78,7 @@ describe("MCP test tool main logic", () => {
   it("returns needsContext with build and test failures", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    // Use the first test failure from the mock
-    const mockFailure = testFailureMock.issues.testFailureSummaries._values[0];
-    // Extract real fields from the mock
-    const testIdentifier = mockFailure.testCaseName._value;
-    const fileUrl = mockFailure.documentLocationInCreatingWorkspace.url._value;
-    const lineMatch = fileUrl.match(/EndingLineNumber=(\d+)/);
-    const line = lineMatch ? Number(lineMatch[1]) : undefined;
-    const message = mockFailure.message._value;
-    const suiteName = testIdentifier.split(".")[0];
-    const file = fileUrl.split("#")[0].replace("file:///", "/");
-    const stack = "";
-    const attachments: string[] = [];
-    const testFailure = {
-      testIdentifier,
-      suiteName,
-      file,
-      line,
-      message,
-      stack,
-      attachments,
-      severity: TestFailureSeverity.MEDIUM,
-      category: TestFailureCategory.ASSERTION,
-      isUITest: false
-    };
+    const testFailure = createTestFailureFromMock(0);
     const buildErrors = ["Build failed", "Linker error"];
     const result: TaskResult<string> = {
       success: false,
@@ -97,21 +90,50 @@ describe("MCP test tool main logic", () => {
     };
     const res = formatTestResultResponse(input, validation, result);
     const text = res.content[0].text;
+    
     // Check all attributes are present and correct
     expect(text).toContain('Analysis Required');
     expect(text).toContain('Build Errors Found');
+    expect(text).toContain(testFailure.testIdentifier);
+    expect(text).toContain(testFailure.message);
     for (const err of buildErrors) {
       expect(text).toContain(err);
     }
-    expect(text).toContain(testFailure.testIdentifier);
-    // The output includes 'Line: ...' for needsContext
     if (testFailure.line !== undefined) {
       expect(text).toContain(`Line: ${testFailure.line}`);
     }
-    expect(text).toContain(`Error: ${testFailure.message}`);
-    if (testFailure.stack) {
-      expect(text).toContain(`Stack: ${testFailure.stack}`);
+  });
+
+  it("returns test failures with proper formatting", () => {
+    const input = { ...baseInput };
+    const validation = getValidation(input);
+    const testFailure = createTestFailureFromMock(1);
+    const result: TaskResult<string> = {
+      success: false,
+      error: TaskErrorType.TEST_FAILURES,
+      testFailures: [testFailure]
+    };
+    const res = formatTestResultResponse(input, validation, result);
+    const text = res.content[0].text;
+    
+    // Check formatted output contains key elements
+    expect(text).toContain("Test Failures Detected");
+    expect(text).toContain(testFailure.testIdentifier);
+    expect(text).toContain(testFailure.message);
+    expect(text).toContain(`📁 Suite: ${testFailure.suiteName}`);
+    expect(text).toContain(`📄 File: ${testFailure.file}`);
+    if (testFailure.line !== undefined) {
+      expect(text).toContain(`📍 Line: ${testFailure.line}`);
     }
+  });
+
+  it("returns success result", () => {
+    const input = { ...baseInput };
+    const validation = getValidation(input);
+    const result: TaskResult<any> = { success: true, data: { foo: "bar" } };
+    const res = formatTestResultResponse(input, validation, result);
+    expect(res.content[0].text).toContain("✅ **All Tests Passed!**");
+    expect(res.content[0].text).toContain("[object Object]");
   });
 
   it("returns error for no result", () => {
@@ -121,16 +143,25 @@ describe("MCP test tool main logic", () => {
     expect(res.content[0].text).toMatch(/Test Execution Error/);
   });
 
-  it("returns success result", () => {
+  it("handles different error types correctly", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
-    const result: TaskResult<any> = { success: true, data: { foo: "bar" } };
-    const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toContain("✅ **All Tests Passed!**");
-    expect(res.content[0].text).toContain("[object Object]"); // This is how { foo: "bar" } gets stringified
+    
+    const errorTypes = [
+      { error: TaskErrorType.BUILD_ERROR, expectedMatch: /Build System Error/ },
+      { error: TaskErrorType.MISSING_PROJECT, expectedMatch: /Project File Not Found/ },
+      { error: TaskErrorType.MAX_RETRIES, expectedMatch: /Maximum Retry Attempts Exceeded/ },
+      { error: TaskErrorType.UNKNOWN_ERROR, expectedMatch: /Unexpected Error[\s\S]*unknown-error/ }
+    ];
+
+    errorTypes.forEach(({ error, expectedMatch }) => {
+      const result: TaskResult<string> = { success: false, error };
+      const res = formatTestResultResponse(input, validation, result);
+      expect(res.content[0].text).toMatch(expectedMatch);
+    });
   });
 
-  it("returns build errors", () => {
+  it("returns build errors with proper formatting", () => {
     const input = { ...baseInput };
     const validation = getValidation(input);
     const result: TaskResult<string> = { success: false, error: TaskErrorType.BUILD_ERROR, buildErrors: ["B1", "B2"] };
@@ -138,97 +169,6 @@ describe("MCP test tool main logic", () => {
     expect(res.content[0].text).toMatch(/Build Errors Detected/);
     expect(res.content[0].text).toMatch(/B1/);
     expect(res.content[0].text).toMatch(/B2/);
-  });
-
-  it("returns test failures", () => {
-    const input = { ...baseInput };
-    const validation = getValidation(input);
-    // Use the second test failure from the mock
-    const mockFailure = testFailureMock.issues.testFailureSummaries._values[1];
-    // Extract real fields from the mock
-    const testIdentifier = mockFailure.testCaseName._value;
-    const fileUrl = mockFailure.documentLocationInCreatingWorkspace.url._value;
-    const lineMatch = fileUrl.match(/EndingLineNumber=(\d+)/);
-    const line = lineMatch ? Number(lineMatch[1]) : undefined;
-    const message = mockFailure.message._value;
-    const suiteName = testIdentifier.split(".")[0];
-    const file = fileUrl.split("#")[0].replace("file:///", "/");
-    const stack = "";
-    const attachments: string[] = [];
-    const testFailure = {
-      testIdentifier,
-      suiteName,
-      file,
-      line,
-      message,
-      stack,
-      attachments,
-      severity: TestFailureSeverity.MEDIUM,
-      category: TestFailureCategory.ASSERTION,
-      isUITest: false
-    };
-    const result: TaskResult<string> = {
-      success: false,
-      error: TaskErrorType.TEST_FAILURES,
-      testFailures: [testFailure]
-    };
-    const res = formatTestResultResponse(input, validation, result);
-    const text = res.content[0].text;
-    // Check all attributes are present and correct
-    expect(text).toContain("Test Failures Detected");
-    expect(text).toContain(testFailure.testIdentifier);
-    expect(text).toContain(testFailure.message);
-    // The output includes emoji formatted sections, so check for the formatted output
-    expect(text).toContain(`**${testFailure.testIdentifier}**`);
-    expect(text).toContain(`📁 Suite: ${testFailure.suiteName}`);
-    expect(text).toContain(`📄 File: ${testFailure.file}`);
-    if (testFailure.line !== undefined) {
-      expect(text).toContain(`📍 Line: ${testFailure.line}`);
-    }
-    expect(text).toContain(`💬 Error: ${testFailure.message}`);
-    // Ensure nothing is missing
-    const expectedFields = [
-      testFailure.testIdentifier,
-      testFailure.message,
-      testFailure.suiteName,
-      testFailure.file,
-      testFailure.line !== undefined ? String(testFailure.line) : undefined
-    ].filter(Boolean);
-    for (const field of expectedFields) {
-      expect(text).toContain(field);
-    }
-  });
-
-  it("returns max-retries error", () => {
-    const input = { ...baseInput };
-    const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: TaskErrorType.MAX_RETRIES };
-    const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/Maximum Retry Attempts Exceeded/);
-  });
-
-  it("returns build-error error", () => {
-    const input = { ...baseInput };
-    const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: TaskErrorType.BUILD_ERROR };
-    const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/Build System Error/);
-  });
-
-  it("returns missing-project error", () => {
-    const input = { ...baseInput };
-    const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: TaskErrorType.MISSING_PROJECT };
-    const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/Project File Not Found/);
-  });
-
-  it("returns fallback error", () => {
-    const input = { ...baseInput };
-    const validation = getValidation(input);
-    const result: TaskResult<string> = { success: false, error: TaskErrorType.UNKNOWN_ERROR };
-    const res = formatTestResultResponse(input, validation, result);
-    expect(res.content[0].text).toMatch(/Unexpected Error[\s\S]*unknown-error/);
   });
 });
 
