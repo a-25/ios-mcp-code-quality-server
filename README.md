@@ -11,11 +11,24 @@ A Model Context Protocol (MCP) server that provides comprehensive iOS code quali
 Get up and running in minutes:
 
 ```bash
-# Download the latest release zip from https://github.com/a-25/ios-mcp-code-quality-server/releases
-unzip <release-artifact>.zip
-cd <release-artifact>
-node dist/index.js
+# Install the package
+npm install ios-mcp-code-quality-server
+
+# Start the server
+node node_modules/ios-mcp-code-quality-server/dist/index.js
 ```
+
+Or use a simple package.json script:
+
+```json
+{
+  "scripts": {
+    "start-mcp": "node node_modules/ios-mcp-code-quality-server/dist/index.js"
+  }
+}
+```
+
+Then run: `npm run start-mcp`
 
 The server will start on `http://localhost:3000` and be ready to receive MCP requests.
 
