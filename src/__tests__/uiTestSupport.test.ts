@@ -78,112 +78,79 @@ describe('UI Test Support', () => {
   });
 
   describe('UI Test Failure Categories', () => {
-    it('should categorize element not found failures', () => {
-      const testFailure: TestFailure = {
-        testIdentifier: 'CheckoutUITests.testPurchaseButton',
-        suiteName: 'CheckoutUITests',
-        message: 'Button with identifier "purchaseButton" does not exist',
-        severity: TestFailureSeverity.HIGH,
-        category: TestFailureCategory.ELEMENT_NOT_FOUND,
-        isUITest: true,
-        suggestions: [
-          'Verify the element exists in the current view hierarchy',
-          'Check if the element accessibility identifier is correct'
-        ]
-      };
+    it('should categorize different UI test failure types correctly', () => {
+      const testCases = [
+        {
+          name: 'element not found',
+          testFailure: {
+            testIdentifier: 'CheckoutUITests.testPurchaseButton',
+            suiteName: 'CheckoutUITests',
+            message: 'Button with identifier "purchaseButton" does not exist',
+            severity: TestFailureSeverity.HIGH,
+            category: TestFailureCategory.ELEMENT_NOT_FOUND,
+            isUITest: true,
+            suggestions: ['Verify the element exists in the current view hierarchy']
+          },
+          expectedCategory: TestFailureCategory.ELEMENT_NOT_FOUND,
+          expectedSeverity: TestFailureSeverity.HIGH
+        },
+        {
+          name: 'accessibility',
+          testFailure: {
+            testIdentifier: 'AccessibilityUITests.testVoiceOverSupport',
+            suiteName: 'AccessibilityUITests',
+            message: 'Element missing accessibility identifier for automated testing',
+            severity: TestFailureSeverity.LOW,
+            category: TestFailureCategory.ACCESSIBILITY,
+            isUITest: true,
+            suggestions: ['Verify accessibility identifiers are set on UI elements']
+          },
+          expectedCategory: TestFailureCategory.ACCESSIBILITY,
+          expectedSeverity: TestFailureSeverity.LOW
+        },
+        {
+          name: 'ui interaction',
+          testFailure: {
+            testIdentifier: 'InteractionUITests.testSwipeGesture',
+            suiteName: 'InteractionUITests',
+            message: 'Failed to perform swipe gesture on table view',
+            severity: TestFailureSeverity.MEDIUM,
+            category: TestFailureCategory.UI_INTERACTION,
+            isUITest: true,
+            suggestions: ['Ensure element is hittable before attempting interaction']
+          },
+          expectedCategory: TestFailureCategory.UI_INTERACTION,
+          expectedSeverity: TestFailureSeverity.MEDIUM
+        },
+        {
+          name: 'ui timing',
+          testFailure: {
+            testIdentifier: 'TimingUITests.testLoadingState',
+            suiteName: 'TimingUITests',
+            message: 'Element did not appear within timeout period',
+            severity: 'low',
+            category: 'ui_timing',
+            isUITest: true,
+            suggestions: ['Add explicit waits for animations to complete']
+          },
+          expectedCategory: 'ui_timing',
+          expectedSeverity: 'low'
+        }
+      ];
 
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.TEST_FAILURES,
-        testFailures: [testFailure]
-      };
+      testCases.forEach(({ name, testFailure, expectedCategory, expectedSeverity }) => {
+        const result: TaskResult<string> = {
+          success: false,
+          error: TaskErrorType.TEST_FAILURES,
+          testFailures: [testFailure]
+        };
 
-      const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
-      
-      expect(response._meta?.structured?.failures?.[0]?.category).toBe(TestFailureCategory.ELEMENT_NOT_FOUND);
-      expect(response._meta?.structured?.failures?.[0]?.severity).toBe(TestFailureSeverity.HIGH);
-      expect(response._meta?.structured?.failures?.[0]?.suggestions).toContain('Verify the element exists in the current view hierarchy');
-    });
-
-    it('should categorize accessibility failures', () => {
-      const testFailure: TestFailure = {
-        testIdentifier: 'AccessibilityUITests.testVoiceOverSupport',
-        suiteName: 'AccessibilityUITests',
-        message: 'Element missing accessibility identifier for automated testing',
-        severity: TestFailureSeverity.LOW,
-        category: TestFailureCategory.ACCESSIBILITY,
-        isUITest: true,
-        suggestions: [
-          'Verify accessibility identifiers are set on UI elements',
-          'Check that accessibility labels are descriptive and unique'
-        ]
-      };
-
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.TEST_FAILURES,
-        testFailures: [testFailure]
-      };
-
-      const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
-      
-      expect(response._meta?.structured?.failures?.[0]?.category).toBe(TestFailureCategory.ACCESSIBILITY);
-      expect(response._meta?.structured?.failures?.[0]?.severity).toBe(TestFailureSeverity.LOW);
-      expect(response._meta?.structured?.failures?.[0]?.suggestions).toContain('Verify accessibility identifiers are set on UI elements');
-    });
-
-    it('should categorize UI interaction failures', () => {
-      const testFailure: TestFailure = {
-        testIdentifier: 'InteractionUITests.testSwipeGesture',
-        suiteName: 'InteractionUITests',
-        message: 'Failed to perform swipe gesture on table view',
-        severity: TestFailureSeverity.MEDIUM,
-        category: TestFailureCategory.UI_INTERACTION,
-        isUITest: true,
-        suggestions: [
-          'Ensure element is hittable before attempting interaction',
-          'Check if element is obstructed by other views'
-        ]
-      };
-
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.TEST_FAILURES,
-        testFailures: [testFailure]
-      };
-
-      const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
-      
-      expect(response._meta?.structured?.failures?.[0]?.category).toBe(TestFailureCategory.UI_INTERACTION);
-      expect(response._meta?.structured?.failures?.[0]?.severity).toBe(TestFailureSeverity.MEDIUM);
-      expect(response._meta?.structured?.failures?.[0]?.suggestions).toContain('Ensure element is hittable before attempting interaction');
-    });
-
-    it('should categorize UI timing failures', () => {
-      const testFailure: TestFailure = {
-        testIdentifier: 'TimingUITests.testLoadingState',
-        suiteName: 'TimingUITests',
-        message: 'Element did not appear within timeout period',
-        severity: 'low',
-        category: 'ui_timing',
-        isUITest: true,
-        suggestions: [
-          'Add explicit waits for animations to complete',
-          'Use expectation-based waiting instead of fixed delays'
-        ]
-      };
-
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.TEST_FAILURES,
-        testFailures: [testFailure]
-      };
-
-      const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
-      
-      expect(response._meta?.structured?.failures?.[0]?.category).toBe('ui_timing');
-      expect(response._meta?.structured?.failures?.[0]?.severity).toBe('low');
-      expect(response._meta?.structured?.failures?.[0]?.suggestions).toContain('Add explicit waits for animations to complete');
+        const response = formatTestResultResponse(baseInput, getValidation(baseInput), result);
+        
+        expect(response._meta?.structured?.failures?.[0]?.category).toBe(expectedCategory);
+        expect(response._meta?.structured?.failures?.[0]?.severity).toBe(expectedSeverity);
+        expect(response._meta?.structured?.failures?.[0]?.suggestions).toContain(testFailure.suggestions[0]);
+      });
     });
   });
 
