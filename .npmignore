@@ -1,6 +1,7 @@
 # Test coverage reports
 coverage/
 .nyc_output/
+*.lcov
 
 # Test runner cache
 .cache/
@@ -24,11 +25,6 @@ pids/
 *.pid
 *.seed
 *.pid.lock
-
-# Coverage directories
-coverage/
-*.lcov
-.nyc_output/
 
 # TypeScript source files (only ship compiled JS)
 src/
@@ -57,7 +53,6 @@ tsconfig.build.json
 
 # Misc
 *.tgz
-.cache/
 .parcel-cache/
 
 # artifacts
