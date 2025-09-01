@@ -11,11 +11,8 @@ A Model Context Protocol (MCP) server that provides comprehensive iOS code quali
 Get up and running in minutes:
 
 ```bash
-# Install dependencies
-npm install
-
-# Start the server
-npm start
+unzip <source_code>.zip .
+node dist/index.js
 ```
 
 The server will start on `http://localhost:3000` and be ready to receive MCP requests.
@@ -28,7 +25,6 @@ The server will start on `http://localhost:3000` and be ready to receive MCP req
 - **📊 Structured Reporting**: Clear, actionable feedback with file locations and line numbers
 - **🛠 Build Error Detection**: Intelligent parsing of Xcode build failures
 - **🔒 Local Processing**: All analysis happens on your machine for security
-- **⚡ Fast Results**: Optimized for quick feedback cycles
 
 ## Installation
 
@@ -187,51 +183,6 @@ Discovers and lists all available tests in the iOS project.
 ### Lint Tool
 Performs lint analysis on your iOS project. Currently supported linters: [SwiftLint](https://github.com/realm/SwiftLint)
 
-## API Endpoints
-
-### POST /
-Main MCP endpoint for tool execution requests.
-
-**Headers:**
-- `mcp-session-id`: Optional session identifier
-- `Content-Type`: `application/json`
-
-**Request Body:**
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "test",
-    "arguments": {
-      "xcodeproj": "MyApp.xcodeproj",
-      "scheme": "MyApp",
-      "destination": "platform=iOS Simulator,name=iPhone 15",
-      "tests": ["MyAppTests/LoginTests/testValidLogin"],
-      "target": "unit"
-    }
-  }
-}
-```
-
-**List Tests Example:**
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "list-tests",
-    "arguments": {
-      "xcworkspace": "MyApp.xcworkspace",
-      "scheme": "MyApp"
-    }
-  }
-}
-```
-
-
 ## Usage Examples
 
 ### Running Tests with AI Assistant
@@ -260,23 +211,6 @@ The AI assistant will use the enhanced test tools to:
 ```
 "Please analyze the code quality of my iOS project using SwiftLint"
 ```
-
-## Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   AI Assistant  │───▶│   MCP Server     │───▶│   Xcode Tools   │
-│   (Claude, etc) │    │   (port 3000)    │    │   (xcodebuild)  │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                 │
-                                 ▼
-                       ┌──────────────────┐
-                       │   SwiftLint      │
-                       │   (optional)     │
-                       └──────────────────┘
-```
-
-The server acts as a bridge between AI assistants and iOS development tools, providing a standardized interface for code quality operations.
 
 ## Troubleshooting
 
@@ -340,57 +274,6 @@ npm run type-check
 ```bash
 npm run build
 ```
-
-## Deployment & CI/CD
-
-This repository includes automated deployment and continuous integration workflows:
-
-### Continuous Integration
-
-The repository automatically runs tests on all pull requests and commits to the main branch:
-
-- **Pull Request Testing**: Every PR triggers automated tests on Node.js 20
-- **Build Verification**: Ensures TypeScript compilation succeeds
-- **Test Suite Execution**: All 19 tests must pass before PRs can be merged
-- **Server Startup Check**: Verifies the built server can start successfully
-
-Test failures will block pull request merging, ensuring code quality.
-
-### Release Automation
-
-When a new release is created on GitHub:
-
-1. **Automated Build**: The release workflow builds the project from source
-2. **Test Validation**: Runs the full test suite to ensure release quality
-3. **Artifact Creation**: Packages the distributable with:
-   - Built JavaScript files (`dist/` directory)
-   - Essential files (`package.json`, `README.md`, `LICENSE`)
-   - Installation script (`install.sh`)
-   - Startup script (`start.sh`)
-4. **Release Attachment**: Automatically attaches the packaged artifact to the GitHub release
-
-### Deployment Package
-
-Release artifacts include everything needed to run the server:
-
-```bash
-# Extract the release package
-tar -xzf ios-mcp-code-quality-server-v1.0.0.tar.gz
-cd extracted-directory
-
-# Install dependencies
-./install.sh
-
-# Start the server
-./start.sh
-# OR manually: node dist/index.js
-```
-
-### Workflow Files
-
-- `.github/workflows/ci.yml` - Continuous integration and PR testing
-- `.github/workflows/pr-check.yml` - PR status checks
-- `.github/workflows/release.yml` - Release automation and artifact creation
 
 ## Contributing
 
