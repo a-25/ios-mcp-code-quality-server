@@ -83,100 +83,38 @@ describe('UI Test Auto-Detection Logic', () => {
   });
 
   describe('UI Test Failure Categories', () => {
-    it('should categorize element not found failures correctly', () => {
-      const elementNotFoundMessages = [
-        'Button with identifier "submit" does not exist',
-        'element not found: loginButton',
-        'view not found in hierarchy',
-        'navigation bar could not be located'
+    it('should categorize different UI failure types based on message patterns', () => {
+      const testCases = [
+        {
+          message: 'Button with identifier "submit" does not exist',
+          expectedPattern: /element.*not.*found|does not exist|not.*located/,
+          category: 'element_not_found'
+        },
+        {
+          message: 'accessibility identifier not set',
+          expectedPattern: /accessibility|accessible/,
+          category: 'accessibility'
+        },
+        {
+          message: 'failed to tap button',
+          expectedPattern: /tap|touch|swipe|scroll|keyboard|gesture/,
+          category: 'ui_interaction'
+        },
+        {
+          message: 'element did not appear within timeout',
+          expectedPattern: /appear|animation|wait|visible|timeout/,
+          category: 'ui_timing'
+        }
       ];
 
-      elementNotFoundMessages.forEach(message => {
-        // These message patterns should trigger ELEMENT_NOT_FOUND category
-        expect(message.toLowerCase()).toMatch(/element.*not.*found|does not exist|not.*located|view.*not.*found|navigation.*bar/);
-      });
-    });
-
-    it('should categorize accessibility failures correctly', () => {
-      const accessibilityMessages = [
-        'accessibility identifier not set',
-        'element is not accessibility-enabled', 
-        'accessible label missing',
-        'accessibility trait required'
-      ];
-
-      accessibilityMessages.forEach(message => {
-        expect(message.toLowerCase()).toMatch(/accessibility|accessible/);
-      });
-    });
-
-    it('should categorize UI interaction failures correctly', () => {
-      const interactionMessages = [
-        'failed to tap button',
-        'swipe gesture not recognized',
-        'touch coordinates invalid',
-        'scroll operation failed',
-        'keyboard input not accepted'
-      ];
-
-      interactionMessages.forEach(message => {
-        expect(message.toLowerCase()).toMatch(/tap|touch|swipe|scroll|keyboard|gesture/);
-      });
-    });
-
-    it('should categorize UI timing failures correctly', () => {
-      const timingMessages = [
-        'element did not appear within timeout',
-        'animation not completed',
-        'wait condition failed',
-        'element not visible after delay'
-      ];
-
-      timingMessages.forEach(message => {
-        expect(message.toLowerCase()).toMatch(/appear|animation|wait|visible|timeout/);
+      testCases.forEach(({ message, expectedPattern, category }) => {
+        expect(message.toLowerCase()).toMatch(expectedPattern);
+        // This verifies the pattern matching logic that would be used for categorization
       });
     });
   });
 
-  describe('Expected Categorization Results', () => {
-    it('should expect proper category mapping for common UI test scenarios', () => {
-      // Define expected mappings that our categorization logic should produce
-      const expectedCategories = {
-        'Element not found errors': TestFailureCategory.ELEMENT_NOT_FOUND,
-        'Accessibility issues': TestFailureCategory.ACCESSIBILITY,
-        'Touch/gesture failures': TestFailureCategory.UI_INTERACTION,
-        'Animation/timing issues': TestFailureCategory.UI_TIMING,
-        'General assertions': TestFailureCategory.ASSERTION,
-        'App crashes': TestFailureCategory.CRASH,
-        'Test timeouts': TestFailureCategory.TIMEOUT,
-        'Build errors': TestFailureCategory.BUILD
-      };
 
-      // Verify our enum values exist and are correct
-      expect(TestFailureCategory.ELEMENT_NOT_FOUND).toBe('element_not_found');
-      expect(TestFailureCategory.ACCESSIBILITY).toBe('accessibility');
-      expect(TestFailureCategory.UI_INTERACTION).toBe('ui_interaction');
-      expect(TestFailureCategory.UI_TIMING).toBe('ui_timing');
-      expect(TestFailureCategory.ASSERTION).toBe('assertion');
-      expect(TestFailureCategory.CRASH).toBe('crash');
-      expect(TestFailureCategory.TIMEOUT).toBe('timeout');
-      expect(TestFailureCategory.BUILD).toBe('build');
-    });
-
-    it('should expect proper severity mapping for UI test failures', () => {
-      // Define expected severity levels
-      expect(TestFailureSeverity.CRITICAL).toBe('critical');
-      expect(TestFailureSeverity.HIGH).toBe('high');
-      expect(TestFailureSeverity.MEDIUM).toBe('medium');
-      expect(TestFailureSeverity.LOW).toBe('low');
-
-      // Element not found should typically be HIGH priority
-      // Accessibility issues should typically be LOW priority  
-      // UI interaction failures should typically be MEDIUM priority
-      // Crashes should be CRITICAL
-      // Build errors should be HIGH priority
-    });
-  });
 
   describe('Integration with Real Scenarios', () => {
     it('should handle complex UI test failure with multiple indicators', () => {

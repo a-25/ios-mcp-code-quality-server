@@ -36,68 +36,21 @@ describe('validateLintFixOptions', () => {
     expect(result.error).toBeUndefined();
   });
 
-  it('should be invalid when changedFiles is empty', () => {
-    const options: LintFixOptions = {
-      changedFiles: []
-    };
+  it('should be invalid when changedFiles is missing or invalid', () => {
+    const invalidCases = [
+      { case: 'empty array', options: { changedFiles: [] }, expectedError: 'changedFiles array must be provided and non-empty for linting' },
+      { case: 'not provided', options: { configPath: '/config/.swiftlint.yml' }, expectedError: 'changedFiles array must be provided and non-empty for linting' },
+      { case: 'completely empty', options: {}, expectedError: 'changedFiles array must be provided and non-empty for linting' },
+      { case: 'empty string', options: { changedFiles: [''] }, expectedError: 'Each file path in changedFiles must be a valid non-empty string' },
+      { case: 'non-string value', options: { changedFiles: [123] }, expectedError: 'Each file path in changedFiles must be a valid non-empty string' },
+      { case: 'null value', options: { changedFiles: [null] }, expectedError: 'Each file path in changedFiles must be a valid non-empty string' }
+    ];
 
-    const result = validateLintFixOptions(options);
-
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe('changedFiles array must be provided and non-empty for linting');
-  });
-
-  it('should be invalid when changedFiles is not provided', () => {
-    const options: Partial<LintFixOptions> = {
-      configPath: '/config/.swiftlint.yml' // Only config, no changed files
-    };
-
-    const result = validateLintFixOptions(options);
-
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe('changedFiles array must be provided and non-empty for linting');
-  });
-
-  it('should be invalid when completely empty', () => {
-    const options: Partial<LintFixOptions> = {};
-
-    const result = validateLintFixOptions(options);
-
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe('changedFiles array must be provided and non-empty for linting');
-  });
-
-  it('should be invalid when changedFiles has empty string', () => {
-    const options: any = {
-      changedFiles: [''] // Empty file path
-    };
-
-    const result = validateLintFixOptions(options);
-
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe("Each file path in changedFiles must be a valid non-empty string");
-  });
-
-  it('should be invalid when changedFiles has non-string value', () => {
-    const options: any = {
-      changedFiles: [123] // Invalid file path type
-    };
-
-    const result = validateLintFixOptions(options);
-
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe("Each file path in changedFiles must be a valid non-empty string");
-  });
-
-  it('should be invalid when changedFiles has null value', () => {
-    const options: any = {
-      changedFiles: [null] // Invalid file path value
-    };
-
-    const result = validateLintFixOptions(options);
-
-    expect(result.valid).toBe(false);
-    expect(result.error).toBe("Each file path in changedFiles must be a valid non-empty string");
+    invalidCases.forEach(({ case: testCase, options, expectedError }) => {
+      const result = validateLintFixOptions(options as any);
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe(expectedError);
+    });
   });
 });
 
