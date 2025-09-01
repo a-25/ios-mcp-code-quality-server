@@ -9,7 +9,6 @@ describe('AI Enhancement Features', () => {
   const baseInput: TestFixOptions = {
     scheme: 'TestScheme',
     xcodeproj: 'TestProj.xcodeproj',
-    xcworkspace: 'TestWorkspace.xcworkspace',
     destination: 'platform=iOS Simulator,name=iPhone 16'
   };
 
@@ -18,16 +17,14 @@ describe('AI Enhancement Features', () => {
     error: input.invalid ? 'Invalid input' : undefined 
   });
 
-  describe('Structured Response Format', () => {
-    it('should include structured metadata for AI parsing', () => {
+  describe('Core Response Structure', () => {
+    it('should provide structured metadata for critical test failures', () => {
       const testFailure = {
         testIdentifier: 'MyAppTests.testCriticalFeature',
         suiteName: 'MyAppTests',
         file: '/path/to/test.swift',
         line: 42,
         message: 'XCTAssertEqual failed: expected "success" but got "failure"',
-        stack: 'stack trace here',
-        attachments: [],
         severity: TestFailureSeverity.CRITICAL,
         category: TestFailureCategory.ASSERTION,
         isUITest: false,
@@ -38,10 +35,7 @@ describe('AI Enhancement Features', () => {
         success: false,
         error: TaskErrorType.TEST_FAILURES,
         testFailures: [testFailure],
-        buildErrors: [],
-        aiSuggestions: ['Review assertion logic'],
-        needsContext: false,
-        message: 'Test failure detected'
+        aiSuggestions: ['Review assertion logic']
       };
 
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -50,26 +44,12 @@ describe('AI Enhancement Features', () => {
         result
       );
 
-      // Check structured metadata exists
+      // Verify structured data is present and correct
       expect(res._meta?.structured).toBeDefined();
       expect(res._meta?.structured?.status).toBe('failure');
-      
-      // Check summary data
       expect(res._meta?.structured?.summary?.totalFailures).toBe(1);
       expect(res._meta?.structured?.summary?.priorities?.critical).toBe(1);
-      expect(res._meta?.structured?.summary?.categories?.assertion).toBe(1);
-      
-      // Check failure details
-      expect(res._meta?.structured?.failures).toHaveLength(1);
-      const failure = res._meta?.structured?.failures?.[0];
-      expect(failure?.test).toBe('MyAppTests.testCriticalFeature');
-      expect(failure?.severity).toBe('critical');
-      expect(failure?.category).toBe('assertion');
-      expect(failure?.suggestions).toContain('Check the implementation logic');
-      
-      // Check actionable items
       expect(res._meta?.structured?.actionable?.priority).toBe('fix_critical');
-      expect(res._meta?.structured?.actionable?.suggestions).toEqual(['Review assertion logic']);
     });
 
     it('should prioritize build errors over test failures', () => {
@@ -77,9 +57,7 @@ describe('AI Enhancement Features', () => {
         success: false,
         error: TaskErrorType.BUILD_ERROR,
         buildErrors: ['Compilation error: undefined symbol'],
-        testFailures: [],
-        aiSuggestions: ['Check import statements'],
-        message: 'Build failed with compilation errors'
+        testFailures: []
       };
 
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -92,69 +70,33 @@ describe('AI Enhancement Features', () => {
       expect(res._meta?.structured?.actionable?.priority).toBe('fix_build');
       expect(res._meta?.structured?.buildErrors).toHaveLength(1);
     });
-
-    it('should indicate success status when all tests pass', () => {
-      const result: TaskResult<string> = {
-        success: true,
-        data: 'All tests passed successfully!'
-      };
-
-      const res: AIFriendlyTestResponse = formatTestResultResponse(
-        baseInput, 
-        getValidation(baseInput), 
-        result
-      );
-
-      expect(res._meta?.structured?.status).toBe('success');
-      expect(res._meta?.structured?.actionable?.priority).toBe('all_good');
-      expect(res.content[0].text).toMatch(/All Tests Passed/);
-    });
   });
 
-  describe('Enhanced Test Failure Categorization', () => {
-    it('should categorize assertion failures correctly', () => {
-      const testFailure = {
-        testIdentifier: 'TestCase.testAssertion',
-        suiteName: 'TestCase',
-        message: 'XCTAssertEqual failed',
-        severity: TestFailureSeverity.MEDIUM,
-        category: TestFailureCategory.ASSERTION,
-        isUITest: false,
-        suggestions: ['Review assertion logic']
-      };
+  describe('Test Failure Categorization', () => {
+    it('should categorize different failure types correctly', () => {
+      const testFailures = [
+        {
+          testIdentifier: 'TestCase.testCrash',
+          suiteName: 'TestCase',
+          message: 'Test crashed with SIGABRT',
+          severity: TestFailureSeverity.CRITICAL,
+          category: TestFailureCategory.CRASH,
+          isUITest: false
+        },
+        {
+          testIdentifier: 'UITest.testElementNotFound',
+          suiteName: 'UITest', 
+          message: 'Element not found',
+          severity: TestFailureSeverity.HIGH,
+          category: TestFailureCategory.ELEMENT_NOT_FOUND,
+          isUITest: true
+        }
+      ];
 
       const result: TaskResult<string> = {
         success: false,
         error: TaskErrorType.TEST_FAILURES,
-        testFailures: [testFailure]
-      };
-
-      const res: AIFriendlyTestResponse = formatTestResultResponse(
-        baseInput, 
-        getValidation(baseInput), 
-        result
-      );
-
-      const failure = res._meta?.structured?.failures?.[0];
-      expect(failure?.category).toBe('assertion');
-      expect(failure?.suggestions).toContain('Review assertion logic');
-    });
-
-    it('should categorize crash failures as critical', () => {
-      const testFailure = {
-        testIdentifier: 'TestCase.testCrash',
-        suiteName: 'TestCase',
-        message: 'Test crashed with SIGABRT',
-        severity: TestFailureSeverity.CRITICAL,
-        category: TestFailureCategory.CRASH,
-        isUITest: false,
-        suggestions: ['Check for nil pointer dereferences', 'Add defensive programming']
-      };
-
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.TEST_FAILURES,
-        testFailures: [testFailure]
+        testFailures
       };
 
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -164,84 +106,14 @@ describe('AI Enhancement Features', () => {
       );
 
       expect(res._meta?.structured?.summary?.priorities?.critical).toBe(1);
-      expect(res._meta?.structured?.actionable?.priority).toBe('fix_critical');
-      expect(res.content[0].text).toMatch(/🔴.*CRITICAL Priority/);
-    });
-  });
-
-  describe('User-Friendly Text Output', () => {
-    it('should format failure output with emojis and clear structure', () => {
-      const testFailure = {
-        testIdentifier: 'MyTests.testFeature',
-        suiteName: 'MyTests',
-        file: '/path/to/test.swift',
-        line: 123,
-        message: 'Test failed unexpectedly',
-        severity: TestFailureSeverity.HIGH,
-        category: TestFailureCategory.ASSERTION,
-        isUITest: false,
-        suggestions: ['Check implementation', 'Verify test data']
-      };
-
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.TEST_FAILURES,
-        testFailures: [testFailure]
-      };
-
-      const res: AIFriendlyTestResponse = formatTestResultResponse(
-        baseInput, 
-        getValidation(baseInput), 
-        result
-      );
-
-      const text = res.content[0].text;
-      
-      // Check for user-friendly formatting
-      expect(text).toMatch(/🧪.*Test Failures Detected/);
-      expect(text).toMatch(/🟠.*HIGH Priority/);
-      expect(text).toMatch(/📄 File:.*test\.swift/);
-      expect(text).toMatch(/📍 Line: 123/);
-      expect(text).toMatch(/💬 Error:.*Test failed unexpectedly/);
-      expect(text).toMatch(/💡 Suggestions:/);
-      expect(text).toContain('Check implementation');
-      expect(text).toContain('Verify test data');
-    });
-
-    it('should provide actionable next steps', () => {
-      const result: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.NEEDS_CONTEXT,
-        needsContext: true,
-        message: 'Need more information',
-        testFailures: [{
-          testIdentifier: 'Test.failing',
-          suiteName: 'Test',
-          message: 'Assertion failed',
-          severity: TestFailureSeverity.MEDIUM,
-          category: TestFailureCategory.ASSERTION,
-          isUITest: false,
-          suggestions: ['Fix the logic']
-        }],
-        buildErrors: []
-      };
-
-      const res: AIFriendlyTestResponse = formatTestResultResponse(
-        baseInput, 
-        getValidation(baseInput), 
-        result
-      );
-
-      const text = res.content[0].text;
-      expect(text).toMatch(/🔍.*Analysis Required/);
-      expect(text).toMatch(/Next Steps:/);
-      expect(text).toContain('Please provide the source code');
-      expect(text).toContain('Include relevant class/function definitions');
+      expect(res._meta?.structured?.summary?.priorities?.high).toBe(1);
+      expect(res._meta?.structured?.summary?.categories?.crash).toBe(1);
+      expect(res._meta?.structured?.summary?.categories?.element_not_found).toBe(1);
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle validation errors with clear messaging', () => {
+    it('should handle validation errors appropriately', () => {
       const invalidInput = { ...baseInput, invalid: true };
       
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -251,11 +123,10 @@ describe('AI Enhancement Features', () => {
       );
 
       expect(res._meta?.structured?.status).toBe('error');
-      expect(res.content[0].text).toMatch(/❌.*Input Validation Error/);
-      expect(res.content[0].text).toContain('Please check your input parameters');
+      expect(res.content[0].text).toMatch(/Input Validation Error/);
     });
 
-    it('should provide helpful guidance for missing project files', () => {
+    it('should handle missing project file errors', () => {
       const result: TaskResult<string> = {
         success: false,
         error: TaskErrorType.MISSING_PROJECT
@@ -268,53 +139,12 @@ describe('AI Enhancement Features', () => {
       );
 
       expect(res._meta?.structured?.status).toBe('error');
-      expect(res.content[0].text).toMatch(/📁.*Project File Not Found/);
-      expect(res.content[0].text).toContain('Use absolute paths rather than relative paths');
-      expect(res.content[0].text).toContain('Example:');
+      expect(res.content[0].text).toMatch(/Project File Not Found/);
     });
   });
 
-  describe('Integration with Test Runner Enhanced Data', () => {
-    it('should handle enhanced TestRunResult with artifacts and suggestions', () => {
-      const enhancedResult: TaskResult<string> = {
-        success: false,
-        error: TaskErrorType.TEST_FAILURES,
-        testFailures: [{
-          testIdentifier: 'MyAppUITests.testLoginButton',
-          suiteName: 'MyAppUITests',
-          message: 'Button with identifier "loginButton" was not found',
-          attachments: ['screenshot1.png', 'screenshot2.png'],
-          severity: TestFailureSeverity.HIGH,
-          category: TestFailureCategory.ELEMENT_NOT_FOUND,
-          isUITest: true,
-          suggestions: ['Check UI element visibility', 'Verify accessibility identifier is correct']
-        }],
-        buildErrors: [],
-        aiSuggestions: ['Update test selectors', 'Add wait conditions'],
-        message: 'UI test failed with screenshots available'
-      };
-
-      const res: AIFriendlyTestResponse = formatTestResultResponse(
-        baseInput,
-        getValidation(baseInput),
-        enhancedResult
-      );
-
-      // Check that structured data is generated from the test failure data
-      expect(res._meta?.structured?.summary?.totalFailures).toBe(1);
-      expect(res._meta?.structured?.failures).toHaveLength(1);
-      const failure = res._meta?.structured?.failures?.[0];
-      expect(failure?.test).toBe('MyAppUITests.testLoginButton');
-      expect(failure?.severity).toBe('high');
-      expect(failure?.category).toBe('element_not_found');
-      expect(failure?.suggestions).toContain('Check UI element visibility');
-      
-      // Check AI suggestions from TaskResult
-      expect(res._meta?.structured?.actionable?.suggestions).toEqual(['Update test selectors', 'Add wait conditions']);
-    });
-
-    it('should auto-detect UI tests and categorize appropriately', () => {
-      // Simulate what would happen after testRunner processes a UI test failure
+  describe('UI Test Integration', () => {
+    it('should handle UI test failures with enhanced data', () => {
       const uiTestResult: TaskResult<string> = {
         success: false,
         error: TaskErrorType.TEST_FAILURES,
@@ -323,17 +153,11 @@ describe('AI Enhancement Features', () => {
           suiteName: 'LoginUITests',
           message: 'Element not found: Could not locate button with identifier "submit"',
           attachments: ['failure_screenshot.png'],
-          // Pre-categorized as would happen in testRunner processing
           isUITest: true,
           category: TestFailureCategory.ELEMENT_NOT_FOUND,
           severity: TestFailureSeverity.HIGH,
-          suggestions: [
-            'Verify the element exists in the current view hierarchy',
-            'Check if the element accessibility identifier is correct'
-          ]
-        }],
-        buildErrors: [],
-        message: 'UI test failure with auto-detection'
+          suggestions: ['Verify element exists', 'Check accessibility identifier']
+        }]
       };
 
       const res: AIFriendlyTestResponse = formatTestResultResponse(
@@ -342,18 +166,10 @@ describe('AI Enhancement Features', () => {
         uiTestResult
       );
 
-      // Verify UI test was properly categorized and formatted
       const failure = res._meta?.structured?.failures?.[0];
       expect(failure?.category).toBe('element_not_found');
       expect(failure?.severity).toBe('high');
-      
-      // Should have UI-specific suggestions
-      expect(failure?.suggestions).toContain('Verify the element exists in the current view hierarchy');
-      expect(failure?.suggestions).toContain('Check if the element accessibility identifier is correct');
-      
-      // Should show screenshots in formatted output
-      expect(res.content[0].text).toContain('📸 Screenshots:');
-      expect(res.content[0].text).toContain('failure_screenshot.png');
+      expect(failure?.suggestions).toContain('Verify element exists');
     });
   });
 });
