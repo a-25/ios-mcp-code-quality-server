@@ -1,0 +1,78 @@
+# Test coverage reports
+coverage/
+.nyc_output/
+*.lcov
+
+# Test runner cache
+.cache/
+
+# Compiled test output (if using TypeScript)
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# TypeScript source files (only ship compiled JS)
+src/
+
+# Node modules
+node_modules/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE and editor folders
+.vscode/
+.idea/
+
+# Development files
+vitest.config.ts
+tsconfig.json
+tsconfig.build.json
+
+# Test files 
+**/__tests__/
+**/*.test.ts
+**/*.test.js
+
+# Misc
+*.tgz
+.parcel-cache/
+
+# artifacts
+*.xcresult
+.mcp-artifacts/
+release-dist/
+test-release/
+
+# Development documentation that shouldn't be in the published package
+MCP_Copilot_Integration_Plan.md
+.github/
+
+# ESLint config files
+.eslintrc.json
+
+# Jest config files
+jest.config.cjs
+jest.config.js
+jest.config.mjs
+
+# Claude development files
+.claude/
+CLAUDE.md
