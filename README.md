@@ -11,7 +11,9 @@ A Model Context Protocol (MCP) server that provides comprehensive iOS code quali
 Get up and running in minutes:
 
 ```bash
-unzip <source_code>.zip .
+# Download the latest release zip from https://github.com/a-25/ios-mcp-code-quality-server/releases
+unzip <release-artifact>.zip
+cd <release-artifact>
 node dist/index.js
 ```
 
