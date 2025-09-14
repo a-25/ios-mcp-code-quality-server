@@ -1,6 +1,10 @@
 # iOS MCP Code Quality Server
 
-A Model Context Protocol (MCP) server that provides comprehensive iOS code quality analysis and test automation capabilities. This server enables AI assistants to run Xcode tests, perform linter analysis, and provide detailed feedback on iOS projects through structured, actionable reports.
+A versatile iOS code quality analysis tool that operates in two modes:
+1. **CLI Tool**: Direct command-line interface for iOS testing and linting
+2. **MCP Server**: Model Context Protocol server for AI assistant integration
+
+This tool provides comprehensive iOS code quality analysis and test automation capabilities, enabling both direct developer usage and AI assistant integration for Xcode tests, linter analysis, and detailed feedback on iOS projects through structured, actionable reports.
 
 ![License](https://img.shields.io/github/license/a-25/ios-mcp-code-quality-server)
 ![Tests](https://img.shields.io/github/actions/workflow/status/a-25/ios-mcp-code-quality-server/test.yml)
@@ -8,7 +12,30 @@ A Model Context Protocol (MCP) server that provides comprehensive iOS code quali
 
 ## Quick Start
 
-Get up and running in minutes:
+### CLI Mode (Direct Usage)
+
+Install globally for direct command-line usage:
+
+```bash
+# Option 1: Clone and build from source (recommended)
+git clone https://github.com/a-25/ios-mcp-code-quality-server.git
+cd ios-mcp-code-quality-server
+npm install && npm run build
+
+# Install globally (optional) - adds 'ios-mcp-quality' command to PATH
+npm install -g .
+
+# Option 2: Install directly from npm (when published)
+npm install -g ios-mcp-code-quality-server
+
+# Use directly
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
+ios-mcp-quality lint --changed-files "ViewController.swift,Model.swift"
+```
+
+### MCP Server Mode (AI Assistant Integration)
+
+Use as an MCP server for AI assistant integration:
 
 ```bash
 # Install the package
@@ -40,8 +67,140 @@ The server will start on `http://localhost:3000` and be ready to receive MCP req
 - **📊 Structured Reporting**: Clear, actionable feedback with file locations and line numbers
 - **🛠 Build Error Detection**: Intelligent parsing of Xcode build failures
 - **🔒 Local Processing**: All analysis happens on your machine for security
+- **⚡ Dual Mode Operation**: Use as CLI tool or MCP server
+- **💻 Command Line Interface**: Direct terminal usage for developers
+- **🤖 AI Assistant Ready**: MCP protocol support for seamless AI integration
 
-## Installation
+## Architecture
+
+This tool operates in two distinct modes with intelligent detection:
+
+### CLI Mode
+- **Activation**: When command-line arguments are provided (`test`, `lint`, `server`)
+- **Usage**: Direct developer interaction via terminal commands
+- **Output**: Human-readable or JSON format for scripting
+- **Benefits**: Fast execution, scriptable, CI/CD friendly
+
+### MCP Server Mode  
+- **Activation**: When no CLI arguments provided (default) or explicit `server` command
+- **Usage**: AI assistant integration via Model Context Protocol
+- **Output**: Structured MCP responses for AI consumption
+- **Benefits**: AI-powered analysis, contextual suggestions, interactive debugging
+
+**Smart Mode Detection:**
+```bash
+node dist/index.js                    # → Starts MCP server (default)
+ios-mcp-quality                       # → Starts MCP server (default)
+ios-mcp-quality server                # → Starts MCP server (explicit)
+ios-mcp-quality test --help           # → CLI mode (command provided)
+ios-mcp-quality lint --changed-files  # → CLI mode (command provided)
+```
+
+## CLI Usage
+
+### Installation
+
+```bash
+# Clone and build
+git clone https://github.com/a-25/ios-mcp-code-quality-server.git
+cd ios-mcp-code-quality-server
+npm install && npm run build
+
+# Optional: Install globally for system-wide access
+npm install -g .
+```
+
+### Commands
+
+#### General Usage
+```bash
+ios-mcp-quality --help              # Show all available commands
+ios-mcp-quality <command> --help    # Show help for specific command
+```
+
+#### Test Command
+Run iOS tests with comprehensive analysis:
+
+```bash
+# Basic usage
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
+
+# With specific destination
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests \
+  --destination "platform=iOS Simulator,name=iPhone 15"
+
+# Using Xcode project instead of workspace
+ios-mcp-quality test --xcodeproj MyApp.xcodeproj --scheme MyAppTests
+
+# Get JSON output for script integration
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json
+
+# Verbose logging for debugging
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
+```
+
+**Test Command Options:**
+- `--xcworkspace <path>`: Path to .xcworkspace file
+- `--xcodeproj <path>`: Path to .xcodeproj file (either xcworkspace or xcodeproj required)
+- `--scheme <name>`: Scheme name for testing (required)
+- `--destination <destination>`: Test destination (default: "platform=iOS Simulator")
+- `--json`: Output results in JSON format
+- `--verbose`: Enable verbose logging
+
+#### Lint Command
+Run SwiftLint analysis on specific files:
+
+```bash
+# Lint specific files
+ios-mcp-quality lint --changed-files "ViewController.swift,Model.swift"
+
+# With custom SwiftLint configuration
+ios-mcp-quality lint --changed-files "*.swift" --config-path .swiftlint.yml
+
+# Get JSON output
+ios-mcp-quality lint --changed-files "ViewController.swift" --json
+
+# Verbose output
+ios-mcp-quality lint --changed-files "*.swift" --verbose
+```
+
+**Lint Command Options:**
+- `--changed-files <files>`: Comma-separated list of files to lint (required)
+- `--config-path <path>`: Path to SwiftLint configuration file
+- `--json`: Output results in JSON format
+- `--verbose`: Enable verbose logging
+
+#### Server Command
+Start MCP server mode explicitly:
+
+```bash
+# Start server on default port (3000)
+ios-mcp-quality server
+
+# Start server on custom port
+ios-mcp-quality server --port 8080
+
+# Server with custom settings
+PORT=3001 LOG_LEVEL=debug ios-mcp-quality server
+```
+
+### CLI Examples
+
+```bash
+# Complete iOS project test workflow
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
+
+# Quick SwiftLint check on modified files
+git diff --name-only | grep "\.swift$" | xargs -I {} ios-mcp-quality lint --changed-files {}
+
+# CI/CD integration with JSON output
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json > test-results.json
+
+# Check specific Swift files before commit
+ios-mcp-quality lint --changed-files "LoginViewController.swift,UserModel.swift" --config-path .swiftlint.yml
+```
+
+## MCP Server Installation
 
 ### Prerequisites
 
@@ -71,6 +230,8 @@ The server will start on `http://localhost:3000` and be ready to receive MCP req
 4. **Start the server:**
    ```bash
    npm start
+   # or explicitly
+   node dist/index.js server
    ```
 
 ### AI Assistant Integration
@@ -103,6 +264,8 @@ Example configuration:
 export PORT=8080
 export LOG_LEVEL=debug
 npm start
+# or for CLI mode:
+PORT=8080 LOG_LEVEL=debug ios-mcp-quality server
 ```
 
 ### Configuration
@@ -200,7 +363,47 @@ Performs lint analysis on your iOS project. Currently supported linters: [SwiftL
 
 ## Usage Examples
 
-### Running Tests with AI Assistant
+### CLI Usage Examples
+
+**Direct Testing:**
+```bash
+# Run all tests in a scheme
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
+
+# Run tests with specific simulator
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests \
+  --destination "platform=iOS Simulator,name=iPhone 15 Pro"
+
+# Get machine-readable output for CI/CD
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json
+```
+
+**Code Quality Analysis:**
+```bash
+# Lint specific files
+ios-mcp-quality lint --changed-files "LoginView.swift,UserModel.swift"
+
+# Lint with custom config
+ios-mcp-quality lint --changed-files "*.swift" --config-path .swiftlint.yml
+
+# Git workflow integration
+git diff --name-only HEAD~1 | grep "\.swift$" | tr '\n' ',' | \
+  ios-mcp-quality lint --changed-files
+```
+
+**Development Workflow:**
+```bash
+# Pre-commit hook example
+#!/bin/sh
+changed_swift_files=$(git diff --cached --name-only --diff-filter=ACM | grep "\.swift$" | tr '\n' ',' | sed 's/,$//')
+if [ -n "$changed_swift_files" ]; then
+  ios-mcp-quality lint --changed-files "$changed_swift_files" || exit 1
+fi
+```
+
+### AI Assistant Usage (MCP Mode)
+
+**Running Tests with AI Assistant:**
 
 ```
 "Can you run the tests for the LoginFeature scheme and tell me what failed?"
@@ -221,7 +424,7 @@ The AI assistant will use the enhanced test tools to:
 4. Parse build and test results with detailed failure analysis
 5. Provide structured summaries of failures with file locations and line numbers
 
-### Code Quality Analysis
+**Code Quality Analysis:**
 
 ```
 "Please analyze the code quality of my iOS project using SwiftLint"
@@ -230,6 +433,11 @@ The AI assistant will use the enhanced test tools to:
 ## Troubleshooting
 
 ### Common Issues
+
+**CLI command not found:**
+- If using global install: `npm install -g .` from the project directory
+- Otherwise use: `node dist/index.js <command>` from the project directory
+- Verify build completed: `npm run build`
 
 **Server won't start:**
 - Check that port 3000 is available: `lsof -i :3000`
@@ -240,10 +448,12 @@ The AI assistant will use the enhanced test tools to:
 - Ensure Xcode is installed and command line tools are available
 - Check that the specified scheme exists in your project
 - Verify the destination device/simulator is available: `xcrun simctl list devices`
+- For CLI mode: ensure xcworkspace/xcodeproj paths are correct and accessible
 
 **SwiftLint not working:**
 - Install SwiftLint: `brew install swiftlint`
 - Verify installation: `swiftlint version`
+- For CLI mode: ensure changed-files paths are correct and files exist
 
 **MCP Connection Issues:**
 - Verify the server is running: check that the process is active on port 3000 with `lsof -i :3000`
@@ -254,9 +464,17 @@ The AI assistant will use the enhanced test tools to:
 
 Enable detailed logging for troubleshooting:
 
+**CLI Mode:**
+```bash
+ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
+```
+
+**MCP Server Mode:**
 ```bash
 export LOG_LEVEL=debug
 npm start
+# or
+LOG_LEVEL=debug ios-mcp-quality server
 ```
 
 ## Development

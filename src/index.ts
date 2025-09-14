@@ -273,28 +273,58 @@ const handleSessionRequest = async (req: express.Request, res: express.Response)
 app.get("/", handleSessionRequest);
 app.delete("/", handleSessionRequest);
 
-const server = app.listen(env.PORT, () => {
-  logger.info("MCP Server started successfully", {
-    port: env.PORT,
-    environment: env.NODE_ENV,
-    version: env.MCP_SERVER_VERSION
+// Export server startup function for CLI usage
+export async function startMcpServer(): Promise<void> {
+  const server = app.listen(env.PORT, () => {
+    logger.info("MCP Server started successfully", {
+      port: env.PORT,
+      environment: env.NODE_ENV,
+      version: env.MCP_SERVER_VERSION
+    });
   });
-});
 
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  logger.info("SIGTERM received, shutting down gracefully");
-  server.close(() => {
-    logger.info("Server closed");
-    process.exit(0);
+  // Graceful shutdown
+  process.on("SIGTERM", () => {
+    logger.info("SIGTERM received, shutting down gracefully");
+    server.close(() => {
+      logger.info("Server closed");
+      process.exit(0);
+    });
   });
-});
 
-process.on("SIGINT", () => {
-  logger.info("SIGINT received, shutting down gracefully");
-  server.close(() => {
-    logger.info("Server closed");
-    process.exit(0);
+  process.on("SIGINT", () => {
+    logger.info("SIGINT received, shutting down gracefully");
+    server.close(() => {
+      logger.info("Server closed");
+      process.exit(0);
+    });
   });
-});
+}
 
+// Detect CLI vs server mode
+async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+  
+  // If there are command line arguments, assume CLI mode
+  if (args.length > 0 && args[0] !== '--server') {
+    // Import and run CLI
+    const { runCLI } = await import('./cli/index.js');
+    await runCLI();
+  } else {
+    // Start MCP server mode
+    await startMcpServer();
+  }
+}
+
+// Export main function for testing
+export { main };
+
+// Run main function if this file is executed directly (not imported)
+const isMainModule = process.argv[1] && process.argv[1].endsWith('index.js');
+if (isMainModule) {
+  main().catch(error => {
+    logger.error('Application startup failed:', error);
+    console.error('❌ Startup failed:', error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
