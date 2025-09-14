@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import express from "express";
 import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -305,13 +307,14 @@ export async function startMcpServer(): Promise<void> {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   
-  // If there are command line arguments, assume CLI mode
-  if (args.length > 0 && args[0] !== '--server') {
+  // Simple logic: if there are arguments, assume CLI mode
+  // If no arguments, start MCP server
+  if (args.length > 0) {
     // Import and run CLI
     const { runCLI } = await import('./cli/index.js');
     await runCLI();
   } else {
-    // Start MCP server mode
+    // Start MCP server mode (default when no args)
     await startMcpServer();
   }
 }

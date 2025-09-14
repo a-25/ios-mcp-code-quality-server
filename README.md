@@ -12,50 +12,44 @@ This tool provides comprehensive iOS code quality analysis and test automation c
 
 ## Quick Start
 
-### CLI Mode (Direct Usage)
+### CLI Mode (Direct Usage with npx - Recommended)
 
-Install globally for direct command-line usage:
+**Use instantly without installation:**
 
 ```bash
-# Option 1: Clone and build from source (recommended)
-git clone https://github.com/a-25/ios-mcp-code-quality-server.git
-cd ios-mcp-code-quality-server
-npm install && npm run build
+# Run iOS tests
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
 
-# Install globally (optional) - adds 'ios-mcp-quality' command to PATH
-npm install -g .
+# Run SwiftLint analysis
+npx ios-mcp-code-quality-server lint --changed-files "ViewController.swift,Model.swift"
 
-# Option 2: Install directly from npm (when published)
+# Show help
+npx ios-mcp-code-quality-server --help
+```
+
+### Alternative: Install Globally (Optional)
+
+For frequent use across multiple projects, you can install globally:
+
+```bash
 npm install -g ios-mcp-code-quality-server
 
-# Use directly
+# Then use the shorter alias
 ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
 ios-mcp-quality lint --changed-files "ViewController.swift,Model.swift"
 ```
 
+> **💡 Tip:** Using `npx` is recommended as it ensures you always use the latest version without global installs.
+
 ### MCP Server Mode (AI Assistant Integration)
 
-Use as an MCP server for AI assistant integration:
-
 ```bash
-# Install the package
-npm install ios-mcp-code-quality-server
+# Start as MCP server (no arguments)
+npx ios-mcp-code-quality-server
 
-# Start the server
-node node_modules/ios-mcp-code-quality-server/dist/index.js
+# Or explicitly start server mode
+npx ios-mcp-code-quality-server server
 ```
-
-Or use a simple package.json script:
-
-```json
-{
-  "scripts": {
-    "start-mcp": "node node_modules/ios-mcp-code-quality-server/dist/index.js"
-  }
-}
-```
-
-Then run: `npm run start-mcp`
 
 The server will start on `http://localhost:3000` and be ready to receive MCP requests.
 
@@ -76,67 +70,61 @@ The server will start on `http://localhost:3000` and be ready to receive MCP req
 This tool operates in two distinct modes with intelligent detection:
 
 ### CLI Mode
-- **Activation**: When command-line arguments are provided (`test`, `lint`, `server`)
-- **Usage**: Direct developer interaction via terminal commands
+- **Activation**: When command-line arguments are provided
+- **Usage**: Direct developer interaction via terminal commands or npx
 - **Output**: Human-readable or JSON format for scripting
-- **Benefits**: Fast execution, scriptable, CI/CD friendly
+- **Benefits**: Fast execution, scriptable, CI/CD friendly, no installation required with npx
 
 ### MCP Server Mode  
-- **Activation**: When no CLI arguments provided (default) or explicit `server` command
+- **Activation**: When no arguments are provided (default)
 - **Usage**: AI assistant integration via Model Context Protocol
 - **Output**: Structured MCP responses for AI consumption
 - **Benefits**: AI-powered analysis, contextual suggestions, interactive debugging
 
-**Smart Mode Detection:**
+**Simple Mode Detection:**
 ```bash
-node dist/index.js                    # → Starts MCP server (default)
-ios-mcp-quality                       # → Starts MCP server (default)
-ios-mcp-quality server                # → Starts MCP server (explicit)
-ios-mcp-quality test --help           # → CLI mode (command provided)
-ios-mcp-quality lint --changed-files  # → CLI mode (command provided)
+# MCP Server Mode (no arguments)
+npx ios-mcp-code-quality-server          # → Starts MCP server
+ios-mcp-quality                          # → Starts MCP server (if globally installed)
+
+# CLI Mode (arguments provided)  
+npx ios-mcp-code-quality-server --help           # → CLI help
+npx ios-mcp-code-quality-server test --help      # → CLI test help
+npx ios-mcp-code-quality-server lint --changed-files="file.swift"  # → CLI lint
 ```
 
 ## CLI Usage
 
-### Installation
+### No Installation Required
+
+Use `npx` to run the CLI directly without installation:
 
 ```bash
-# Clone and build
-git clone https://github.com/a-25/ios-mcp-code-quality-server.git
-cd ios-mcp-code-quality-server
-npm install && npm run build
-
-# Optional: Install globally for system-wide access
-npm install -g .
+npx ios-mcp-code-quality-server --help              # Show all available commands
+npx ios-mcp-code-quality-server <command> --help    # Show help for specific command
 ```
 
 ### Commands
-
-#### General Usage
-```bash
-ios-mcp-quality --help              # Show all available commands
-ios-mcp-quality <command> --help    # Show help for specific command
-```
 
 #### Test Command
 Run iOS tests with comprehensive analysis:
 
 ```bash
 # Basic usage
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
 
 # With specific destination
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests \
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests \
   --destination "platform=iOS Simulator,name=iPhone 15"
 
 # Using Xcode project instead of workspace
-ios-mcp-quality test --xcodeproj MyApp.xcodeproj --scheme MyAppTests
+npx ios-mcp-code-quality-server test --xcodeproj MyApp.xcodeproj --scheme MyAppTests
 
 # Get JSON output for script integration
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json
 
 # Verbose logging for debugging
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
 ```
 
 **Test Command Options:**
@@ -152,16 +140,16 @@ Run SwiftLint analysis on specific files:
 
 ```bash
 # Lint specific files
-ios-mcp-quality lint --changed-files "ViewController.swift,Model.swift"
+npx ios-mcp-code-quality-server lint --changed-files "ViewController.swift,Model.swift"
 
 # With custom SwiftLint configuration
-ios-mcp-quality lint --changed-files "*.swift" --config-path .swiftlint.yml
+npx ios-mcp-code-quality-server lint --changed-files "*.swift" --config-path .swiftlint.yml
 
 # Get JSON output
-ios-mcp-quality lint --changed-files "ViewController.swift" --json
+npx ios-mcp-code-quality-server lint --changed-files "ViewController.swift" --json
 
 # Verbose output
-ios-mcp-quality lint --changed-files "*.swift" --verbose
+npx ios-mcp-code-quality-server lint --changed-files "*.swift" --verbose
 ```
 
 **Lint Command Options:**
@@ -175,29 +163,29 @@ Start MCP server mode explicitly:
 
 ```bash
 # Start server on default port (3000)
-ios-mcp-quality server
+npx ios-mcp-code-quality-server server
 
 # Start server on custom port
-ios-mcp-quality server --port 8080
+npx ios-mcp-code-quality-server server --port 8080
 
 # Server with custom settings
-PORT=3001 LOG_LEVEL=debug ios-mcp-quality server
+PORT=3001 LOG_LEVEL=debug npx ios-mcp-code-quality-server server
 ```
 
 ### CLI Examples
 
 ```bash
 # Complete iOS project test workflow
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
 
 # Quick SwiftLint check on modified files
-git diff --name-only | grep "\.swift$" | xargs -I {} ios-mcp-quality lint --changed-files {}
+git diff --name-only | grep "\.swift$" | xargs -I {} npx ios-mcp-code-quality-server lint --changed-files {}
 
 # CI/CD integration with JSON output
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json > test-results.json
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json > test-results.json
 
 # Check specific Swift files before commit
-ios-mcp-quality lint --changed-files "LoginViewController.swift,UserModel.swift" --config-path .swiftlint.yml
+npx ios-mcp-code-quality-server lint --changed-files "LoginViewController.swift,UserModel.swift" --config-path .swiftlint.yml
 ```
 
 ## MCP Server Installation
@@ -265,7 +253,7 @@ export PORT=8080
 export LOG_LEVEL=debug
 npm start
 # or for CLI mode:
-PORT=8080 LOG_LEVEL=debug ios-mcp-quality server
+PORT=8080 LOG_LEVEL=debug npx ios-mcp-code-quality-server server
 ```
 
 ### Configuration
@@ -368,27 +356,27 @@ Performs lint analysis on your iOS project. Currently supported linters: [SwiftL
 **Direct Testing:**
 ```bash
 # Run all tests in a scheme
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
 
 # Run tests with specific simulator
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests \
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests \
   --destination "platform=iOS Simulator,name=iPhone 15 Pro"
 
 # Get machine-readable output for CI/CD
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --json
 ```
 
 **Code Quality Analysis:**
 ```bash
 # Lint specific files
-ios-mcp-quality lint --changed-files "LoginView.swift,UserModel.swift"
+npx ios-mcp-code-quality-server lint --changed-files "LoginView.swift,UserModel.swift"
 
 # Lint with custom config
-ios-mcp-quality lint --changed-files "*.swift" --config-path .swiftlint.yml
+npx ios-mcp-code-quality-server lint --changed-files "*.swift" --config-path .swiftlint.yml
 
 # Git workflow integration
 git diff --name-only HEAD~1 | grep "\.swift$" | tr '\n' ',' | \
-  ios-mcp-quality lint --changed-files
+  npx ios-mcp-code-quality-server lint --changed-files
 ```
 
 **Development Workflow:**
@@ -397,7 +385,7 @@ git diff --name-only HEAD~1 | grep "\.swift$" | tr '\n' ',' | \
 #!/bin/sh
 changed_swift_files=$(git diff --cached --name-only --diff-filter=ACM | grep "\.swift$" | tr '\n' ',' | sed 's/,$//')
 if [ -n "$changed_swift_files" ]; then
-  ios-mcp-quality lint --changed-files "$changed_swift_files" || exit 1
+  npx ios-mcp-code-quality-server lint --changed-files "$changed_swift_files" || exit 1
 fi
 ```
 
@@ -466,7 +454,7 @@ Enable detailed logging for troubleshooting:
 
 **CLI Mode:**
 ```bash
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
+npx ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbose
 ```
 
 **MCP Server Mode:**
@@ -474,7 +462,7 @@ ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests --verbo
 export LOG_LEVEL=debug
 npm start
 # or
-LOG_LEVEL=debug ios-mcp-quality server
+LOG_LEVEL=debug npx ios-mcp-code-quality-server server
 ```
 
 ## Development

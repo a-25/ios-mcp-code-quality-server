@@ -2,11 +2,22 @@
   "name": "ios-mcp-code-quality-server",
   "version": "0.1.1",
   "type": "module",
-  "description": "A server for analyzing iOS MCP code quality using AI suggestions and test results.",
+  "description": "A CLI and MCP server for analyzing iOS code quality using AI suggestions and test results.",
   "main": "dist/index.js",
   "bin": {
     "ios-mcp-quality": "dist/index.js"
   },
+  "keywords": [
+    "ios", 
+    "xcode", 
+    "testing", 
+    "linting", 
+    "swiftlint", 
+    "xcodebuild", 
+    "mcp",
+    "cli", 
+    "code-quality"
+  ],
   "scripts": {
     "start": "tsc -p tsconfig.build.json --noEmit false && node dist/index.js",
     "build": "tsc -p tsconfig.build.json",
