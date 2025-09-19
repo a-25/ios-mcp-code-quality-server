@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import express from "express";
 import { randomUUID } from "node:crypto";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -37,12 +39,6 @@ setInterval(() => {
     }
   });
 }, env.SESSION_CLEANUP_INTERVAL_MS);
-
-logger.info("MCP Server starting", {
-  port: env.PORT,
-  environment: env.NODE_ENV,
-  version: env.MCP_SERVER_VERSION
-});
 
 app.post("/", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
@@ -273,28 +269,76 @@ const handleSessionRequest = async (req: express.Request, res: express.Response)
 app.get("/", handleSessionRequest);
 app.delete("/", handleSessionRequest);
 
-const server = app.listen(env.PORT, () => {
-  logger.info("MCP Server started successfully", {
+// Export server startup function for CLI usage
+export async function startMcpServer(): Promise<void> {
+  logger.info("MCP Server starting", {
     port: env.PORT,
     environment: env.NODE_ENV,
     version: env.MCP_SERVER_VERSION
   });
-});
-
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  logger.info("SIGTERM received, shutting down gracefully");
-  server.close(() => {
-    logger.info("Server closed");
-    process.exit(0);
+  
+  const server = app.listen(env.PORT, () => {
+    logger.info("MCP Server started successfully", {
+      port: env.PORT,
+      environment: env.NODE_ENV,
+      version: env.MCP_SERVER_VERSION
+    });
   });
-});
 
-process.on("SIGINT", () => {
-  logger.info("SIGINT received, shutting down gracefully");
-  server.close(() => {
-    logger.info("Server closed");
-    process.exit(0);
+  // Graceful shutdown
+  process.on("SIGTERM", () => {
+    logger.info("SIGTERM received, shutting down gracefully");
+    server.close(() => {
+      logger.info("Server closed");
+      process.exit(0);
+    });
   });
-});
 
+  process.on("SIGINT", () => {
+    logger.info("SIGINT received, shutting down gracefully");
+    server.close(() => {
+      logger.info("Server closed");
+      process.exit(0);
+    });
+  });
+}
+
+// Global flag to prevent main execution when imported
+let isImported = false;
+
+// Detect CLI vs server mode
+async function main(): Promise<void> {
+  // Don't run main if this module was imported
+  if (isImported) return;
+  
+  const args = process.argv.slice(2);
+  
+  // Simple logic: if there are arguments, assume CLI mode
+  // If no arguments, start MCP server
+  if (args.length > 0) {
+    // Import and run CLI
+    const { runCLI } = await import('./cli/index.js');
+    await runCLI();
+  } else {
+    // Start MCP server mode (default when no args)
+    await startMcpServer();
+  }
+}
+
+// Export main function for testing
+export { main };
+
+// Export a function that marks this as imported
+export function markAsImported() {
+  isImported = true;
+}
+
+// Run main function if this file is executed directly (not imported)
+// This covers both direct execution and npx usage
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(error => {
+    logger.error('Application startup failed:', error);
+    console.error('❌ Startup failed:', error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}
