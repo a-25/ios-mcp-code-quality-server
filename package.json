@@ -9,7 +9,9 @@
   },
   "keywords": [
     "ios", 
-    "xcode", 
+    "xcode",
+    "xcuitest",
+    "swift",
     "testing", 
     "linting", 
     "swiftlint", 
