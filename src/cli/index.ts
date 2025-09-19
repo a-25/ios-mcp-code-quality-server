@@ -96,7 +96,7 @@ program
 
       // Build LintFixOptions from CLI arguments
       const lintOptions: Partial<LintFixOptions> = {
-        changedFiles: options.changedFiles ? options.changedFiles.split(',').map((f: string) => f.trim()) : [],
+        changedFiles: options.changedFiles ? options.changedFiles.split(',').map((f: string) => f.trim()).filter(Boolean) : [],
         configPath: options.configPath
       };
 
