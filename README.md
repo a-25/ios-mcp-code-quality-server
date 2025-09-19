@@ -34,9 +34,9 @@ For frequent use across multiple projects, you can install globally:
 ```bash
 npm install -g ios-mcp-code-quality-server
 
-# Then use the shorter alias
-ios-mcp-quality test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
-ios-mcp-quality lint --changed-files "ViewController.swift,Model.swift"
+# Then use the full name (following MCP conventions)
+ios-mcp-code-quality-server test --xcworkspace MyApp.xcworkspace --scheme MyAppTests
+ios-mcp-code-quality-server lint --changed-files "ViewController.swift,Model.swift"
 ```
 
 > **💡 Tip:** Using `npx` is recommended as it ensures you always use the latest version without global installs.
@@ -85,7 +85,7 @@ This tool operates in two distinct modes with intelligent detection:
 ```bash
 # MCP Server Mode (no arguments)
 npx ios-mcp-code-quality-server          # → Starts MCP server
-ios-mcp-quality                          # → Starts MCP server (if globally installed)
+ios-mcp-code-quality-server              # → Starts MCP server (if globally installed)
 
 # CLI Mode (arguments provided)  
 npx ios-mcp-code-quality-server --help           # → CLI help

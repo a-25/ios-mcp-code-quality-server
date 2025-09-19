@@ -10,7 +10,7 @@ const program = new Command();
 
 // Configure the main program
 program
-  .name('ios-mcp-quality')
+  .name('ios-mcp-code-quality-server')
   .description('iOS MCP Code Quality CLI - Run tests and linting for iOS projects')
   .version('0.1.1');
 
@@ -66,6 +66,8 @@ program
       // Exit with appropriate code
       if (!result.success) {
         process.exit(1);
+      } else {
+        process.exit(0);
       }
 
     } catch (error) {
@@ -115,14 +117,36 @@ program
         // Output JSON format
         console.log(JSON.stringify(result, null, 2));
       } else {
-        // Output human-readable format using the same formatter as MCP
-        const formattedResponse = formatTestResultResponse(lintOptions as any, validationResult, result);
-        console.log(formattedResponse.text);
+        // Output human-readable format for lint results
+        if (result.success) {
+          console.log('✅ SwiftLint passed - no issues found');
+          if (result.data && typeof result.data === 'object' && 'warnings' in result.data) {
+            const warnings = (result.data as any).warnings;
+            if (warnings && warnings.length > 0) {
+              console.log(`Found ${warnings.length} warning(s):`);
+              warnings.forEach((warning: any, index: number) => {
+                console.log(`  ${index + 1}. ${warning.file}:${warning.line || '?'}:${warning.column || '?'} - ${warning.message} (${warning.rule || 'unknown rule'})`);
+              });
+            }
+          }
+        } else {
+          console.log('❌ SwiftLint found issues:');
+          if (result.message) {
+            console.log(`  ${result.message}`);
+          }
+          if (result.buildErrors && result.buildErrors.length > 0) {
+            result.buildErrors.forEach((error: string, index: number) => {
+              console.log(`  ${index + 1}. ${error}`);
+            });
+          }
+        }
       }
 
       // Exit with appropriate code
       if (!result.success) {
         process.exit(1);
+      } else {
+        process.exit(0);
       }
 
     } catch (error) {
@@ -140,20 +164,20 @@ program
   .command('server')
   .description('Start the MCP server mode')
   .option('--port <port>', 'Port to run the server on', '3000')
-  .action(async (options) => {
+    .action(async (options) => {
     try {
-      console.log('🚀 Starting MCP server mode...');
+      console.log('Starting MCP server...');
       
-      // Set the port in environment before importing
-      process.env.PORT = options.port;
+      // Mark as imported to prevent main execution
+      const indexModule = await import('../index.js');
+      indexModule.markAsImported();
       
-      // Import and start the existing server from index.ts
-      const { startMcpServer } = await import('../index.js');
+      // Import server function
+      const { startMcpServer } = indexModule;
       await startMcpServer();
-      
     } catch (error) {
-      logger.error('Server startup failed:', error);
-      console.error('❌ Server startup failed:', error instanceof Error ? error.message : String(error));
+      logger.error('Failed to start MCP server:', error);
+      console.error('❌ Failed to start MCP server:', error instanceof Error ? error.message : String(error));
       process.exit(1);
     }
   });
@@ -171,7 +195,9 @@ export async function runCLI(): Promise<void> {
 }
 
 // If running directly (not imported), execute CLI
-if (import.meta.url === `file://${process.argv[1]}`) {
+const scriptPath = process.argv[1];
+const currentFile = import.meta.url.replace('file://', '');
+if (scriptPath && (scriptPath === currentFile || scriptPath.endsWith('/dist/cli/index.js'))) {
   runCLI().catch(error => {
     logger.error('CLI execution failed:', error);
     console.error('❌ CLI failed:', error instanceof Error ? error.message : String(error));

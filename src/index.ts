@@ -40,12 +40,6 @@ setInterval(() => {
   });
 }, env.SESSION_CLEANUP_INTERVAL_MS);
 
-logger.info("MCP Server starting", {
-  port: env.PORT,
-  environment: env.NODE_ENV,
-  version: env.MCP_SERVER_VERSION
-});
-
 app.post("/", async (req, res) => {
   const sessionId = req.headers["mcp-session-id"] as string | undefined;
   let transport: StreamableHTTPServerTransport;
@@ -277,6 +271,12 @@ app.delete("/", handleSessionRequest);
 
 // Export server startup function for CLI usage
 export async function startMcpServer(): Promise<void> {
+  logger.info("MCP Server starting", {
+    port: env.PORT,
+    environment: env.NODE_ENV,
+    version: env.MCP_SERVER_VERSION
+  });
+  
   const server = app.listen(env.PORT, () => {
     logger.info("MCP Server started successfully", {
       port: env.PORT,
@@ -303,8 +303,14 @@ export async function startMcpServer(): Promise<void> {
   });
 }
 
+// Global flag to prevent main execution when imported
+let isImported = false;
+
 // Detect CLI vs server mode
 async function main(): Promise<void> {
+  // Don't run main if this module was imported
+  if (isImported) return;
+  
   const args = process.argv.slice(2);
   
   // Simple logic: if there are arguments, assume CLI mode
@@ -322,9 +328,14 @@ async function main(): Promise<void> {
 // Export main function for testing
 export { main };
 
+// Export a function that marks this as imported
+export function markAsImported() {
+  isImported = true;
+}
+
 // Run main function if this file is executed directly (not imported)
-const isMainModule = process.argv[1] && process.argv[1].endsWith('index.js');
-if (isMainModule) {
+// This covers both direct execution and npx usage
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
     logger.error('Application startup failed:', error);
     console.error('❌ Startup failed:', error instanceof Error ? error.message : String(error));
