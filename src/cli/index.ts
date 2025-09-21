@@ -195,9 +195,16 @@ export async function runCLI(): Promise<void> {
 }
 
 // If running directly (not imported), execute CLI
+// Handle both direct execution and npm binary symlinks
 const scriptPath = process.argv[1];
 const currentFile = import.meta.url.replace('file://', '');
-if (scriptPath && (scriptPath === currentFile || scriptPath.endsWith('/dist/cli/index.js'))) {
+const isDirectExecution = scriptPath && (
+  scriptPath === currentFile || 
+  scriptPath.endsWith('/dist/cli/index.js') ||
+  scriptPath.endsWith('/ios-mcp-code-quality-server')
+);
+
+if (isDirectExecution) {
   runCLI().catch(error => {
     logger.error('CLI execution failed:', error);
     console.error('❌ CLI failed:', error instanceof Error ? error.message : String(error));
