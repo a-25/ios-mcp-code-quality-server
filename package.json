@@ -5,7 +5,7 @@
   "description": "A CLI and MCP server for analyzing iOS code quality using AI suggestions and test results.",
   "main": "dist/index.js",
   "bin": {
-    "ios-mcp-code-quality-server": "dist/index.js"
+    "ios-mcp-code-quality-server": "dist/cli/index.js"
   },
   "keywords": [
     "ios", 
