@@ -12,7 +12,7 @@ const program = new Command();
 program
   .name('ios-mcp-code-quality-server')
   .description('iOS MCP Code Quality CLI - Run tests and linting for iOS projects')
-  .version('0.1.3');
+  .version('0.1.4');
 
 /**
  * CLI Test Command

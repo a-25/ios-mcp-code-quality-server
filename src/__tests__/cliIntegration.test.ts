@@ -33,11 +33,11 @@ describe('CLI Integration', () => {
     it('should show version when --version flag is provided', () => {
       try {
         const output = execSync(`node ${cliPath} --version`, { encoding: 'utf8' });
-        expect(output.trim()).toBe('0.1.3');
+        expect(output.trim()).toBe('0.1.4');
       } catch (error: any) {
         // commander.js version exits with code 0 but execSync might capture it differently  
         if (error.status === 0) {
-          expect(error.stdout.trim()).toBe('0.1.3');
+          expect(error.stdout.trim()).toBe('0.1.4');
         } else {
           throw error;
         }
