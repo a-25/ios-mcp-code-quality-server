@@ -1,12 +1,17 @@
 {
   "name": "ios-mcp-code-quality-server",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "A CLI and MCP server for analyzing iOS code quality using AI suggestions and test results.",
   "main": "dist/index.js",
   "bin": {
     "ios-mcp-code-quality-server": "dist/cli/index.js"
   },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "keywords": [
     "ios", 
     "xcode",
@@ -26,7 +31,8 @@
     "start:prod": "node dist/index.js",
     "lint": "eslint . --ext .ts",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",
