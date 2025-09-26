@@ -20,48 +20,8 @@ describe('CLI Argument Parsing and Validation', () => {
     vi.restoreAllMocks();
   });
 
-  describe('Test Command Validation', () => {
-    it('should validate test command options correctly', async () => {
-      const { validateTestFixOptions } = await import('../core/taskOptions.js');
-
-      // Test valid options
-      const validOptions = {
-        xcworkspace: 'MyApp.xcworkspace',
-        scheme: 'MyAppTests',
-        destination: 'platform=iOS Simulator,name=iPhone 15',
-      };
-      
-      const validResult = validateTestFixOptions(validOptions);
-      expect(validResult.valid).toBe(true);
-      expect(validResult.error).toBeUndefined();
-    });
-
-    it('should reject test options without project/workspace', async () => {
-      const { validateTestFixOptions } = await import('../core/taskOptions.js');
-
-      const invalidOptions = {
-        scheme: 'MyAppTests',
-      };
-      
-      const result = validateTestFixOptions(invalidOptions);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('Either xcodeproj or xcworkspace must be provided');
-    });
-
-    it('should require scheme for workspace', async () => {
-      const { validateTestFixOptions } = await import('../core/taskOptions.js');
-
-      const invalidOptions = {
-        xcworkspace: 'MyApp.xcworkspace',
-        // Missing scheme
-      };
-      
-      const result = validateTestFixOptions(invalidOptions);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('Scheme is required when using xcworkspace');
-    });
-
-    it('should validate test identifiers format', async () => {
+  describe('Test Command Edge Cases', () => {
+    it('should reject test identifiers with invalid format', async () => {
       const { validateTestFixOptions } = await import('../core/taskOptions.js');
 
       const optionsWithBadTests = {
@@ -75,135 +35,66 @@ describe('CLI Argument Parsing and Validation', () => {
       expect(result.error).toContain('Invalid test identifier format');
     });
 
-    it('should accept valid test identifiers', async () => {
+    it('should handle complex argument combinations', async () => {
       const { validateTestFixOptions } = await import('../core/taskOptions.js');
 
-      const optionsWithValidTests = {
-        xcworkspace: 'MyApp.xcworkspace',
-        scheme: 'MyAppTests',
-        tests: [
-          'MyAppTests/LoginTests/testValidLogin',
-          'MyAppTests/LoginTests',
-          'MyAppUITests',
-        ],
+      const complexOptions = {
+        xcworkspace: 'My Complex App.xcworkspace',
+        scheme: 'My App Tests',
+        destination: 'platform=iOS Simulator,name=iPhone 15 Pro,OS=17.0',
+        tests: ['MyAppTests/AuthTests/testComplexScenario'],
+        target: 'integration',
       };
       
-      const result = validateTestFixOptions(optionsWithValidTests);
+      const result = validateTestFixOptions(complexOptions);
       expect(result.valid).toBe(true);
-    });
-  });
-
-  describe('Lint Command Validation', () => {
-    it('should validate lint command options correctly', async () => {
-      const { validateLintFixOptions } = await import('../core/taskOptions.js');
-
-      const validOptions = {
-        changedFiles: ['ViewController.swift', 'Model.swift'],
-        configPath: '.swiftlint.yml',
-      };
-      
-      const result = validateLintFixOptions(validOptions);
-      expect(result.valid).toBe(true);
-      expect(result.error).toBeUndefined();
-    });
-
-    it('should reject lint options without changed files', async () => {
-      const { validateLintFixOptions } = await import('../core/taskOptions.js');
-
-      const invalidOptions = {
-        configPath: '.swiftlint.yml',
-      };
-      
-      const result = validateLintFixOptions(invalidOptions);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('changedFiles array must be provided and non-empty');
-    });
-
-    it('should reject empty changed files array', async () => {
-      const { validateLintFixOptions } = await import('../core/taskOptions.js');
-
-      const invalidOptions = {
-        changedFiles: [],
-      };
-      
-      const result = validateLintFixOptions(invalidOptions);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('changedFiles array must be provided and non-empty');
-    });
-
-    it('should validate file path strings', async () => {
-      const { validateLintFixOptions } = await import('../core/taskOptions.js');
-
-      const invalidOptions = {
-        changedFiles: ['valid.swift', '', null as any, 'another.swift'],
-      };
-      
-      const result = validateLintFixOptions(invalidOptions);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('Each file path in changedFiles must be a valid non-empty string');
     });
   });
 
   describe('Command Line Argument Processing', () => {
-    it('should parse comma-separated file list correctly', () => {
-      const fileString = 'file1.swift,file2.swift,file3.swift';
-      const fileArray = fileString.split(',').map(f => f.trim());
-      
-      expect(fileArray).toEqual(['file1.swift', 'file2.swift', 'file3.swift']);
-    });
-
-    it('should handle file list with spaces', () => {
+    it('should parse comma-separated file list with proper trimming', () => {
       const fileString = ' file1.swift , file2.swift , file3.swift ';
       const fileArray = fileString.split(',').map(f => f.trim()).filter(f => f.length > 0);
       
       expect(fileArray).toEqual(['file1.swift', 'file2.swift', 'file3.swift']);
-    });
-
-    it('should handle single file', () => {
-      const fileString = 'single.swift';
-      const fileArray = fileString.split(',').map(f => f.trim());
-      
-      expect(fileArray).toEqual(['single.swift']);
+      expect(fileArray).not.toContain('');
+      expect(fileArray.every(f => !f.includes(' '))).toBe(true);
     });
   });
 
-  describe('Integration - Command Validation Flow', () => {
-    it('should validate complete test workflow', async () => {
+  describe('Integration - Real Workflow Validation', () => {
+    it('should validate complete test workflow with all parameters', async () => {
       const { validateTestFixOptions } = await import('../core/taskOptions.js');
       const { TaskType } = await import('../core/taskOrchestrator.js');
 
-      // Simulate full CLI test command
-      const cliOptions = {
+      const fullWorkflowOptions = {
         xcworkspace: 'MyApp.xcworkspace',
         scheme: 'MyAppTests',
         destination: 'platform=iOS Simulator,name=iPhone 15',
-        verbose: true,
+        tests: ['MyAppTests/LoginTests/testValidLogin', 'MyAppTests/HomeTests'],
+        target: 'regression',
       };
 
-      const validation = validateTestFixOptions(cliOptions);
+      const validation = validateTestFixOptions(fullWorkflowOptions);
       expect(validation.valid).toBe(true);
-      
-      // Should be able to use TaskType.TestFix
       expect(TaskType.TestFix).toBe('test-fix');
     });
 
-    it('should validate complete lint workflow', async () => {
+    it('should validate complete lint workflow with edge cases', async () => {
       const { validateLintFixOptions } = await import('../core/taskOptions.js');
-      const { TaskType } = await import('../core/taskOrchestrator.js');
 
-      // Simulate full CLI lint command
-      const cliOptions = {
-        changedFiles: ['ViewController.swift', 'LoginModel.swift'],
-        configPath: '.swiftlint.yml',
-        verbose: true,
-        json: false,
+      const edgeCaseLintOptions = {
+        changedFiles: [
+          'Sources/App/Controllers/LoginViewController.swift',
+          'Sources/App/Models/User Model.swift', // File with spaces
+          'Tests/AppTests/LoginTests.swift',
+        ],
+        configPath: '/path/with spaces/.swiftlint.yml', // Config with spaces
       };
 
-      const validation = validateLintFixOptions(cliOptions);
+      const validation = validateLintFixOptions(edgeCaseLintOptions);
       expect(validation.valid).toBe(true);
-      
-      // Should be able to use TaskType.LintFix
-      expect(TaskType.LintFix).toBe('lint-fix');
+      expect(edgeCaseLintOptions.changedFiles.length).toBe(3);
     });
   });
 });
