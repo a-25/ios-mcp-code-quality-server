@@ -53,6 +53,10 @@ npx ios-mcp-code-quality-server server
 
 The server will start on `http://localhost:3000` and be ready to receive MCP requests.
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/a-25-ios-mcp-code-quality-server).
+
 ## Features
 
 - **🧪 iOS Test Execution**: Run Xcode tests with detailed failure analysis
