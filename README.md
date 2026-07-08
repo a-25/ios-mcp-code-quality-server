@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/a-25-ios-mcp-code-quality-server-badge.png)](https://mseep.ai/app/a-25-ios-mcp-code-quality-server)
+
 # iOS MCP Code Quality Server
 
 A versatile iOS code quality analysis tool that operates in two modes:
